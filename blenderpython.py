@@ -92,6 +92,8 @@ def mastershader():
     nodes.new('ShaderNodeMixShader')
     nodes['Mix Shader'].name='mixshader1'
     
+    nodes['basebsdf1'].inputs['Roughness'].default_value = 0.601 # based on curet database https://wiki.blender.org/index.php/User:Guiseppe/Oren_Nayar
+    
     # you can modify nodes location from the script. useful for viewing in node editor. This is mainly for viewing easily.
     nodes['Material Output'].location=[650,300]
     nodes['mixshader1'].location=[450,100]
@@ -109,10 +111,10 @@ def mastershader():
     nodes['imagetex1'].location=[-400,300]
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='imagetex2' #roughness map1
-    nodes['imagetex1'].location=[-400,0]
+    nodes['imagetex2'].location=[-400,0]
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='imagetex3' #normal map1
-    nodes['imagetex3'].location=[-400,0]
+    nodes['imagetex3'].location=[-400,-300]
     
     #link images to imagetexture node
     bpy.ops.image.open(filepath='/home/sreenivas/Downloads/pockedconcrete1/albedo.png') #first open image to link
