@@ -115,12 +115,12 @@ def mastershader():
     nodes['imagetex3'].location=[-600,-600]
     
     #link images to imagetexture node
-    bpy.ops.image.open(filepath='/home/sreenivas/pockedconcrete1/pockedconcrete1-albedo.png') #first open image to link
-    nodes['imagetex1'].image=bpy.data.images['pockedconcrete1-albedo.png']
-    bpy.ops.image.open(filepath='/home/sreenivas/pockedconcrete1/pockedconcrete1-roughness.png')
-    nodes['imagetex2'].image=bpy.data.images['pockedconcrete1-roughness.png']
-    bpy.ops.image.open(filepath='/home/sreenivas/pockedconcrete1/pockedconcrete1-normal.png')
-    nodes['imagetex3'].image=bpy.data.images['pockedconcrete1-normal.png']
+    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/albedo.png') #first open image to link
+    nodes['imagetex1'].image=bpy.data.images['albedo.png']
+    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/roughness.png')
+    nodes['imagetex2'].image=bpy.data.images['roughness.png']
+    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/normal.png')
+    nodes['imagetex3'].image=bpy.data.images['normal.png']
     
     
     
@@ -136,12 +136,12 @@ def mastershader():
     nodes['imagetex6'].location=[-600,-900]
     
     # link crack map images to the above nodes
-    bpy.ops.image.open(filepath='/home/sreenivas/crackmap/albedo.png') 
-    nodes['imagetex4'].image=bpy.data.images['albedo.png']
-    bpy.ops.image.open(filepath='/home/sreenivas/crackmap/roughness.png')
-    nodes['imagetex5'].image=bpy.data.images['roughness.png']
-    bpy.ops.image.open(filepath='/home/sreenivas/crackmap/normals.png')
-    nodes['imagetex6'].image=bpy.data.images['normals.png']
+    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/albedo1.png')
+    nodes['imagetex4'].image=bpy.data.images['albedo1.png']
+    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/roughness1.png')
+    nodes['imagetex5'].image=bpy.data.images['roughness1.png']
+    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/normals1.png')
+    nodes['imagetex6'].image=bpy.data.images['normals1.png']
     
     # create mix rgb nodes to mix crack maps and original image pbr maps
     nodes.new('ShaderNodeMixRGB')
@@ -203,5 +203,5 @@ if __name__ == "__main__":
     # master shader for material with mesh
     mastershader()
     # render the engine
-    render(filepath='../', frames=1, samples=6)
+    render(filepath='/home/mundt/', frames=1, samples=6)
     
