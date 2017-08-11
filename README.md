@@ -20,9 +20,20 @@ Free pbr website: https://freepbr.com/ (Working: Last checked 11/08/2017)
 
 To install external python packages like scipy do the following:
 
-1. Locate blender python folder. Ex: /home/username/blender-2.78c/python/bin/. In this folder the python version executable would be present. Ex:python3.5m
-2. Download get-pip.py from pip website: https://pip.pypa.io/en/stable/installing/ (Working: Last checked 11/08/2017)
-3. Install pip. Type in command line: /home/username/blender-2.78c/python/bin/python3.5m /home/username/Downloads/getpip.py (getpip.py location might be different)
-4. To install pacakges use pip in command line. Example: /home/username/blender-2.78c/python/bin/python3.5m pip install scipy
+1. Blender's python executable, e.g. python3.5m is located at 
+~~~
+/path/to/blender-version/python/bin/ 
+~~~
+
+2. Pip is not part of python and thus not part of blender's python. So download it from https://pip.pypa.io/en/stable/installing/ (state: 11/08/2017) and install it
+~~~
+./path/to/blender-version/python/bin/python3.5m /path/to/downloaded/pipinstaller/getpip.py
+~~~
+Note that this is independent of your system's pip
+
+3. Install any packages with pip analogous to regular pip using blender's python version
+~~~
+./path/to/blender-version/python/bin/python3.5m pip install package
+~~~
 
 For any questions contact: murali@fias.uni-frankfurt.de
