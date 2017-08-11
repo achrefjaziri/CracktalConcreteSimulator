@@ -1,7 +1,5 @@
 import bpy
-import numpy as np
 import math
-from PIL import Image
 
 def removeexistingmesh():
     # remove pre-existing cube from blender
@@ -63,10 +61,10 @@ def lightsource():
 
 def mastershader():
     # add a base primitive mesh. in this case a plane mesh is added at origin 
-    bpy.ops.mesh.primitive_plane_add(location=(0,0,0))
+    bpy.ops.mesh.primitive_plane_add(location=(0,-2.0,5.5))
     # default object name is 'Plane'. or index 2 in this case
     # set scale and rotation
-    bpy.data.objects['Plane'].scale=[10.0,10.0,10.0]
+    bpy.data.objects['Plane'].scale=[6.5,6.5,6.5]
     bpy.data.objects['Plane'].rotation_euler=[105*math.pi/180,0,0]
     
     #add material to the object. first create a new material
@@ -108,30 +106,74 @@ def mastershader():
     nodetree.links.new(nodes['mixshader1'].outputs[0],nodes['Material Output'].inputs['Surface'])
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='imagetex1' #albedo map1
-    nodes['imagetex1'].location=[-400,300]
+    nodes['imagetex1'].location=[-600,600]
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='imagetex2' #roughness map1
-    nodes['imagetex2'].location=[-400,0]
+    nodes['imagetex2'].location=[-600,0]
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='imagetex3' #normal map1
-    nodes['imagetex3'].location=[-400,-300]
+    nodes['imagetex3'].location=[-600,-600]
     
     #link images to imagetexture node
-    bpy.ops.image.open(filepath='/home/sreenivas/Downloads/pockedconcrete1/albedo.png') #first open image to link
-    nodes['imagetex1'].image=bpy.data.images['albedo.png']
-    bpy.ops.image.open(filepath='/home/sreenivas/Downloads/pockedconcrete1/roughness.png')
-    nodes['imagetex2'].image=bpy.data.images['roughness.png']
-    bpy.ops.image.open(filepath='/home/sreenivas/Downloads/pockedconcrete1/normal.png')
-    nodes['imagetex3'].image=bpy.data.images['normal.png']
+    bpy.ops.image.open(filepath='/home/sreenivas/pockedconcrete1/pockedconcrete1-albedo.png') #first open image to link
+    nodes['imagetex1'].image=bpy.data.images['pockedconcrete1-albedo.png']
+    bpy.ops.image.open(filepath='/home/sreenivas/pockedconcrete1/pockedconcrete1-roughness.png')
+    nodes['imagetex2'].image=bpy.data.images['pockedconcrete1-roughness.png']
+    bpy.ops.image.open(filepath='/home/sreenivas/pockedconcrete1/pockedconcrete1-normal.png')
+    nodes['imagetex3'].image=bpy.data.images['pockedconcrete1-normal.png']
     
-    #link albedo, roughness and normal maps to color, roughness displacement.
-    nodetree.links.new(nodes['imagetex1'].outputs['Color'],nodes['basebsdf1'].inputs['Color'])
-    nodetree.links.new(nodes['imagetex1'].outputs['Color'],nodes['specbsdf1'].inputs['Color'])
-    nodetree.links.new(nodes['imagetex2'].outputs['Color'],nodes['specbsdf1'].inputs['Roughness'])
-    nodetree.links.new(nodes['imagetex3'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
     
-    ## for cracks add more nodes and combine it with the above existing normal map.  
     
+    ## crack nodes  
+    nodes.new('ShaderNodeTexImage')
+    nodes['Image Texture'].name='imagetex4' #albedo crack
+    nodes['imagetex4'].location=[-600,300]
+    nodes.new('ShaderNodeTexImage')
+    nodes['Image Texture'].name='imagetex5' #roughness crack
+    nodes['imagetex5'].location=[-600,-300]
+    nodes.new('ShaderNodeTexImage')
+    nodes['Image Texture'].name='imagetex6' #normal crack
+    nodes['imagetex6'].location=[-600,-900]
+    
+    # link crack map images to the above nodes
+    bpy.ops.image.open(filepath='/home/sreenivas/crackmap/albedo.png') 
+    nodes['imagetex4'].image=bpy.data.images['albedo.png']
+    bpy.ops.image.open(filepath='/home/sreenivas/crackmap/roughness.png')
+    nodes['imagetex5'].image=bpy.data.images['roughness.png']
+    bpy.ops.image.open(filepath='/home/sreenivas/crackmap/normals.png')
+    nodes['imagetex6'].image=bpy.data.images['normals.png']
+    
+    # create mix rgb nodes to mix crack maps and original image pbr maps
+    nodes.new('ShaderNodeMixRGB')
+    nodes['Mix'].name='mix1'
+    nodes['mix1'].location=[-400,450]
+    nodes.new('ShaderNodeMixRGB')
+    nodes['Mix'].name='mix2'
+    nodes['mix2'].location=[-400,-150]
+    nodes.new('ShaderNodeMixRGB')
+    nodes['Mix'].name='mix3'
+    nodes['mix3'].location=[-400,-750]
+    
+    # link crack and original map nodes to mixrgb
+    nodetree.links.new(nodes['imagetex1'].outputs['Color'],nodes['mix1'].inputs[1])
+    nodetree.links.new(nodes['imagetex4'].outputs['Color'],nodes['mix1'].inputs[2])
+    nodetree.links.new(nodes['imagetex2'].outputs['Color'],nodes['mix2'].inputs[1])
+    nodetree.links.new(nodes['imagetex5'].outputs['Color'],nodes['mix2'].inputs[2])
+    nodetree.links.new(nodes['imagetex3'].outputs['Color'],nodes['mix3'].inputs[1])
+    nodetree.links.new(nodes['imagetex6'].outputs['Color'],nodes['mix3'].inputs[2])
+    
+    # add appropriate factors for scaling mixrgb nodes
+    nodes['mix1'].inputs[0].default_value=0.2
+    nodes['mix2'].inputs[0].default_value=0.5
+    nodes['mix3'].inputs[0].default_value=0.8
+    
+    #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
+    nodetree.links.new(nodes['mix1'].outputs['Color'],nodes['basebsdf1'].inputs['Color'])
+    #nodetree.links.new(nodes['mix1'].outputs['Color'],nodes['specbsdf1'].inputs['Color'])
+    nodetree.links.new(nodes['mix2'].outputs['Color'],nodes['specbsdf1'].inputs['Roughness'])
+    nodetree.links.new(nodes['mix3'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
+   
+   
     #now we need to uv unwrap over the entire mesh
     bpy.ops.object.mode_set(mode = 'EDIT')
     bpy.ops.mesh.select_all(action = 'SELECT')
@@ -140,19 +182,20 @@ def mastershader():
     bpy.ops.object.mode_set(mode = 'OBJECT')
     
     
-def render(filepath, frames=1, samples=10):
+def render(filepath, frames=1, samples=6):
 	bpy.data.scenes['Scene'].frame_end =frames
 	bpy.data.scenes['Scene'].render.filepath = filepath
 	bpy.data.scenes['Scene'].cycles.samples = samples
+	bpy.data.scenes['Scene'].render.resolution_x=2048
+	bpy.data.scenes['Scene'].render.resolution_y=2048
+	bpy.data.scenes['Scene'].render.resolution_percentage=100
 	bpy.ops.render.render(animation=True)
-    
-    
         
 if __name__ == "__main__":
     # ensure that cycles engine is set for the basic scene. predefined object name for scene is 'Scene'. Also can be accesed by index 0.
     bpy.data.scenes['Scene'].render.engine='CYCLES'
     # remove existing mesh present in the scene
-    removeexistingmesh()
+    #removeexistingmesh()
     # modify existing camera
     camerasettings()
     # modify existing light source
@@ -160,5 +203,5 @@ if __name__ == "__main__":
     # master shader for material with mesh
     mastershader()
     # render the engine
-    render(filepath='/home/sreenivas/renderedimagesnew/', frames=1, samples=10)
+    render(filepath='../', frames=1, samples=6)
     
