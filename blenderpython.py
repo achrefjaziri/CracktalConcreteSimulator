@@ -68,7 +68,7 @@ def mastershader():
     bpy.ops.mesh.primitive_plane_add(location=(0,-2.0,5.5))
     # default object name is 'Plane'. or index 2 in this case
     # set scale and rotation
-    bpy.data.objects['Plane'].scale=[6.5,6.5,6.5]
+    bpy.data.objects['Plane'].scale=[6.275,6.275,6.275]
     bpy.data.objects['Plane'].rotation_euler=[105*math.pi/180,0,0]
     
     #add material to the object. first create a new material
@@ -169,7 +169,7 @@ def mastershader():
     # add appropriate factors for scaling mixrgb nodes
     nodetree.links.new(nodes['imagetex4'].outputs['Alpha'],nodes['mix1'].inputs[0]) # value for mix1 comes for crack map alpha
     nodes['mix2'].inputs[0].default_value=0.5
-    nodes['mix3'].inputs[0].default_value=0.8
+    nodes['mix3'].inputs[0].default_value=0.9
     
     #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
     nodetree.links.new(nodes['mix1'].outputs['Color'],nodes['basebsdf1'].inputs['Color'])
@@ -178,8 +178,47 @@ def mastershader():
     nodetree.links.new(nodes['mix3'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
 	
 	# random albedo and other map rgb and mix nodes for random sampling
-    #nodes.new('ShaderNodeRGB')
-	
+    nodes.new('ShaderNodeRGB')
+    nodes['RGB'].name='rgb1'
+    nodes['rgb1'].location=[-600,900]
+    nodes.new('ShaderNodeMapping')
+    nodes['Mapping'].name='map1'
+    nodes['map1'].location=[-1200,0]
+    nodes['map1'].vector_type='VECTOR'
+    nodes.new('ShaderNodeVectorMath')
+    nodes['Vector Math'].operation='ADD'
+    nodes['Vector Math'].name='math1'
+    nodes['math1'].location=[-1500,0]
+    nodes.new('ShaderNodeRGB')
+    nodes['RGB'].name='rgb2'
+    nodes['rgb2'].location=[-1800,0]
+    nodes.new('ShaderNodeTexCoord')
+    nodes['Texture Coordinate'].name='texcoord1'
+    nodes['texcoord1'].location=[-1800,-300]
+    nodes.new('ShaderNodeMixRGB')
+    nodes['Mix'].location=[-300,750]
+    nodes['Mix'].name='mix4'
+    nodes['mix4'].inputs['Fac'].default_value=0.85
+    
+    # links for sampling nodes
+    nodetree.links.new(nodes['mix4'].inputs['Color1'],nodes['rgb1'].outputs['Color'])
+    nodetree.links.new(nodes['mix4'].inputs['Color2'],nodes['imagetex1'].outputs['Color'])
+    nodetree.links.new(nodes['mix4'].outputs['Color'],nodes['mix1'].inputs['Color1'])
+    nodetree.links.new(nodes['map1'].outputs['Vector'],nodes['imagetex1'].inputs['Vector'])
+    nodetree.links.new(nodes['map1'].outputs['Vector'],nodes['imagetex2'].inputs['Vector'])
+    nodetree.links.new(nodes['map1'].outputs['Vector'],nodes['imagetex3'].inputs['Vector'])
+    nodetree.links.new(nodes['math1'].outputs['Vector'],nodes['map1'].inputs['Vector'])
+    nodetree.links.new(nodes['math1'].inputs[0],nodes['rgb2'].outputs['Color'])
+    nodetree.links.new(nodes['math1'].inputs[1],nodes['texcoord1'].outputs['UV'])
+    
+    
+    # sampling values passed to the function
+    nodes['map1'].scale=[2,2,2]
+    nodes['map1'].rotation=[20*math.pi/180,20*math.pi/180,20*math.pi/180]
+    # rgb values for albedo change. need to convert hsv to rgb to use it here.
+    nodes['rgb1'].outputs[0].default_value[0]=0.242
+    nodes['rgb1'].outputs[0].default_value[1]=0.118
+    nodes['rgb1'].outputs[0].default_value[2]=0.0242	
 	
 	#now we need to uv unwrap over the entire mesh
     bpy.ops.object.mode_set(mode = 'EDIT')
