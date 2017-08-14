@@ -4,8 +4,9 @@ The blenderpython.py script generates a basic concrete with image textures for a
 
 Options to run it
 
-1. Open Blender. Run the script from text editor
-2. Type in command line:  blender default.blend --background --python blenderpython.py 
+
+1.  Ensure you are inside blenderpython folder in commandline by using cd command.Type in command line:  blender default.blend --background --python blenderpython.py 
+2. Open blender. Open text editor. Load blenderpython.py. Open pythonconsole. Use os.chdir and change directory to blenderpython folder. Run blenderpython.py from text editor.
 
 ## Details regarding the code implementation
 
