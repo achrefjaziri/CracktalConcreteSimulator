@@ -1,21 +1,27 @@
 import bpy
 import math
+import os
 
-def removeexistingmesh():
-    # remove pre-existing cube from blender
-    for object in bpy.data.objects:
-        if object.type == 'MESH':
+def removeexistingobjects():
+    check = bpy.data.objects is not None
+    # remove pre-existing objects from blender
+    if check == True:
+        for object in bpy.data.objects:
             object.select = True
-        else:
-            object.select = False
-    bpy.ops.object.delete()
-    # clear mesh and material data. removing objects alone is not necessary
-    for mesh in bpy.data.meshes:
-        bpy.data.meshes.remove(mesh)
-    for material in bpy.data.materials:
-        bpy.data.materials.remove(material)
+            bpy.ops.object.delete()
+            # clear mesh and material data. removing objects alone is not necessary
+            for mesh in bpy.data.meshes:
+                bpy.data.meshes.remove(mesh,do_unlink=True)
+            for material in bpy.data.materials:
+                bpy.data.materials.remove(material,do_unlink=True)
+            for camera in bpy.data.cameras:
+                bpy.data.cameras.remove(camera,do_unlink=True)
+            for lamp in bpy.data.lamps:
+                bpy.data.lamps.remove(lamp,do_unlink=True)
         
 def camerasettings():
+    # add camera
+    bpy.ops.object.camera_add()
     # location of camera
     bpy.data.objects['Camera'].location = (0.0,-15.0,2.0)
     # rotation of camera. x axis rotation is 105.125 degrees in this example
@@ -33,31 +39,29 @@ def camerasettings():
     #bpy.ops.script.execute_preset(filepath="yourpathlocation")
 
 def lightsource():
-    # changed default light source from point to sun based on application.
-    # 0 index for predefined light source which is present as part of blender and of type='POINT'
-    bpy.data.lamps[0].type = 'SUN'
+    # add lamp
+    bpy.ops.object.lamp_add(type='SUN')
     # change sun location. 
-    bpy.data.objects['Lamp'].location = [0.0,-5.0,5.0]
+    bpy.data.objects['Sun'].location = [0.0,-5.0,5.0]
+    bpy.data.objects['Sun'].rotation_euler=[59*math.pi/180,0,0]
     
-    
-    # note the default object name for lamps is 'Lamp'. This can be modified. similarly default lamps name is also 'Lamp'
-    # you can modify objects or lamps name. example for lamp or object name change given below. uncomment if needed. 
+    # you can modify object names. example given below. uncomment if needed. 
     # if uncommented upcoming commands should also be modified accordingly
     #bpy.data.lamps[0].name = 'Sun'
-    #bpy.data.objects['Lamp'].name = 'Sun'
+    #bpy.data.objects['Sun'].name = 'Sun'
     # you can add more light sources. uncomment below line for example light source 
     #bpy.ops.object.lamp_add(type='POINT')
     
     
     # change rotation of sun's direction vector. 
-    bpy.data.objects['Lamp'].rotation_euler=[59*math.pi/180,0.0,0.0]
+    bpy.data.objects['Sun'].rotation_euler=[59*math.pi/180,0.0,0.0]
     # in order to change color, strength of sun, we have to use nodes. also node editing is quite useful for designing layers to your rendering
-    bpy.data.lamps['Lamp'].use_nodes=True
+    bpy.data.lamps['Sun'].use_nodes=True
     # in the above statement we used 'Lamp' instead of index 0. The default name of lamps is 'Lamp' as described in the above comments.
     
     # set color and strength value of sun using nodes.
-    bpy.data.lamps['Lamp'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0,1.0,1.0,1.0]
-    bpy.data.lamps['Lamp'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
+    bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0,1.0,1.0,1.0]
+    bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
 
 def mastershader():
     # add a base primitive mesh. in this case a plane mesh is added at origin 
@@ -115,11 +119,11 @@ def mastershader():
     nodes['imagetex3'].location=[-600,-600]
     
     #link images to imagetexture node
-    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/albedo.png') #first open image to link
+    bpy.ops.image.open(filepath='testimagesblender/concretemaps/albedo.png') #first open image to link
     nodes['imagetex1'].image=bpy.data.images['albedo.png']
-    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/roughness.png')
+    bpy.ops.image.open(filepath='testimagesblender/concretemaps/roughness.png')
     nodes['imagetex2'].image=bpy.data.images['roughness.png']
-    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/normal.png')
+    bpy.ops.image.open(filepath='testimagesblender/concretemaps/normal.png')
     nodes['imagetex3'].image=bpy.data.images['normal.png']
     
     
@@ -136,11 +140,11 @@ def mastershader():
     nodes['imagetex6'].location=[-600,-900]
     
     # link crack map images to the above nodes
-    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/albedo1.png')
+    bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
     nodes['imagetex4'].image=bpy.data.images['albedo1.png']
-    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/roughness1.png')
+    bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
     nodes['imagetex5'].image=bpy.data.images['roughness1.png']
-    bpy.ops.image.open(filepath='/home/mundt/Downloads/concrete/normals1.png')
+    bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
     nodes['imagetex6'].image=bpy.data.images['normals1.png']
     
     # create mix rgb nodes to mix crack maps and original image pbr maps
@@ -163,7 +167,7 @@ def mastershader():
     nodetree.links.new(nodes['imagetex6'].outputs['Color'],nodes['mix3'].inputs[2])
     
     # add appropriate factors for scaling mixrgb nodes
-    nodes['mix1'].inputs[0].default_value=0.2
+    nodetree.links.new(nodes['imagetex4'].outputs['Alpha'],nodes['mix1'].inputs[0]) # value for mix1 comes for crack map alpha
     nodes['mix2'].inputs[0].default_value=0.5
     nodes['mix3'].inputs[0].default_value=0.8
     
@@ -172,9 +176,12 @@ def mastershader():
     #nodetree.links.new(nodes['mix1'].outputs['Color'],nodes['specbsdf1'].inputs['Color'])
     nodetree.links.new(nodes['mix2'].outputs['Color'],nodes['specbsdf1'].inputs['Roughness'])
     nodetree.links.new(nodes['mix3'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
-   
-   
-    #now we need to uv unwrap over the entire mesh
+	
+	# random albedo and other map rgb and mix nodes for random sampling
+    #nodes.new('ShaderNodeRGB')
+	
+	
+	#now we need to uv unwrap over the entire mesh
     bpy.ops.object.mode_set(mode = 'EDIT')
     bpy.ops.mesh.select_all(action = 'SELECT')
     bpy.ops.uv.unwrap()
@@ -189,19 +196,73 @@ def render(filepath, frames=1, samples=6):
 	bpy.data.scenes['Scene'].render.resolution_x=2048
 	bpy.data.scenes['Scene'].render.resolution_y=2048
 	bpy.data.scenes['Scene'].render.resolution_percentage=100
+    # before rendering, set the sceen camera to the camera that you created
+	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
+	bpy.ops.render.render(animation=True)
+	
+def rendergt(filepath, frames=1, samples=6):
+	bpy.data.scenes['Scene'].frame_end =frames
+	bpy.data.scenes['Scene'].render.filepath = filepath
+	bpy.data.scenes['Scene'].cycles.samples = samples
+	bpy.data.scenes['Scene'].render.resolution_x=2048
+	bpy.data.scenes['Scene'].render.resolution_y=2048
+	bpy.data.scenes['Scene'].render.resolution_percentage=100
+    # before rendering, set the sceen camera to the camera that you created
+	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
+	
+	nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
+	nodes = bpy.data.materials['concrete'].node_tree.nodes
+	nodes.new('ShaderNodeEmission')
+	nodes['Emission'].name = 'emit1'
+	nodes['emit1'].location=[450,-100]
+	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['imagetex4'].outputs['Color'])
+	nodetree.links.new(nodes['emit1'].outputs['Emission'],nodes['Material Output'].inputs['Surface'])
+	
+	# remove displacement links
+	for l in nodes['Material Output'].inputs['Displacement'].links:
+		nodetree.links.remove(l)
+	
+	bpy.ops.render.render(animation=True)
+	
+
+def rendernp(filepath, frames=1, samples=6):
+	bpy.data.scenes['Scene'].frame_end =frames
+	bpy.data.scenes['Scene'].render.filepath = filepath
+	bpy.data.scenes['Scene'].cycles.samples = samples
+	bpy.data.scenes['Scene'].render.resolution_x=2048
+	bpy.data.scenes['Scene'].render.resolution_y=2048
+	bpy.data.scenes['Scene'].render.resolution_percentage=100
+    # before rendering, set the sceen camera to the camera that you created
+	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
+	
+	nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
+	nodes = bpy.data.materials['concrete'].node_tree.nodes
+	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['mix3'].outputs['Color'])
 	bpy.ops.render.render(animation=True)
         
-if __name__ == "__main__":
-    # ensure that cycles engine is set for the basic scene. predefined object name for scene is 'Scene'. Also can be accesed by index 0.
-    bpy.data.scenes['Scene'].render.engine='CYCLES'
-    # remove existing mesh present in the scene
-    #removeexistingmesh()
-    # modify existing camera
-    camerasettings()
-    # modify existing light source
-    lightsource()
-    # master shader for material with mesh
-    mastershader()
-    # render the engine
-    render(filepath='/home/mundt/', frames=1, samples=6)
-    
+if __name__ == "__main__": 
+	#ensure that cycles engine is set for the basic scene. predefined object name for scene is 'Scene'. Also can be accesed by index 0.
+	bpy.data.scenes['Scene'].render.engine='CYCLES'
+	# check if mode is object mode else set it to object mode
+	checkmode = bpy.context.active_object.mode
+	if checkmode!='OBJECT':
+		bpy.ops.object.mode_set(mode='OBJECT')
+	# if you are running from blender text editor uncomment below line and link blenderpython folder properly here
+	#os.chdir('/yourpath/blenderpython')
+	# remove existing objects present in the scene
+	removeexistingobjects()
+	# modify existing camera
+	camerasettings()
+	# modify existing light source
+	lightsource()
+	# master shader for material with mesh
+	mastershader()
+	# render the engine
+	render(filepath = 'testimagesblender/results/out', frames = 1, samples = 6)
+	# render groundtruth for crack
+	rendergt(filepath = 'testimagesblender/groundtruth/gt', frames = 1, samples = 6)
+	# render normalmap
+	rendernp(filepath = 'testimagesblender/normalmaps/np', frames = 1, samples = 6)
+	
+	
+   
