@@ -4,6 +4,9 @@ import os
 import numpy as np
 import colorsys
 
+# Change this later into either properly sampled parameters or an argument parser
+cracked = False
+
 def removeexistingobjects():
     check = bpy.data.objects is not None
     # remove pre-existing objects from blender
@@ -149,54 +152,57 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     nodes['normalconcrete'].image = imgT
     '''
 
-    ## crack nodes  
-    nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='albedocrack' #albedo crack
-    nodes['albedocrack'].location=[-600,300]
-    nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='roughnesscrack' #roughness crack
-    nodes['roughnesscrack'].location=[-600,-300]
-    nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='normalcrack' #normal crack
-    nodes['normalcrack'].location=[-600,-900]
+    ## crack nodes
+    if cracked:
+        nodes.new('ShaderNodeTexImage')
+        nodes['Image Texture'].name='albedocrack' #albedo crack
+        nodes['albedocrack'].location=[-600,300]
+        nodes.new('ShaderNodeTexImage')
+        nodes['Image Texture'].name='roughnesscrack' #roughness crack
+        nodes['roughnesscrack'].location=[-600,-300]
+        nodes.new('ShaderNodeTexImage')
+        nodes['Image Texture'].name='normalcrack' #normal crack
+        nodes['normalcrack'].location=[-600,-900]
+
+        # link crack map images to the above nodes
+        bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
+        nodes['albedocrack'].image=bpy.data.images['albedo1.png']
+        bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
+        nodes['roughnesscrack'].image=bpy.data.images['roughness1.png']
+        bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
+        nodes['normalcrack'].image=bpy.data.images['normals1.png']
+
+        # create mix rgb nodes to mix crack maps and original image pbr maps
+        nodes.new('ShaderNodeMixRGB')
+        nodes['Mix'].name='albedomix'
+        nodes['albedomix'].location=[-400,450]
+        nodes.new('ShaderNodeMixRGB')
+        nodes['Mix'].name='roughnessmix'
+        nodes['roughnessmix'].location=[-400,-150]
+        nodes.new('ShaderNodeMixRGB')
+        nodes['Mix'].name='normalmix'
+        nodes['normalmix'].location=[-400,-750]
+
+        # link crack and original map nodes to mixrgb
+        nodetree.links.new(nodes['albedoconcrete'].outputs['Color'],nodes['albedomix'].inputs[1])
+        nodetree.links.new(nodes['albedocrack'].outputs['Color'],nodes['albedomix'].inputs[2])
+        nodetree.links.new(nodes['roughnessconcrete'].outputs['Color'],nodes['roughnessmix'].inputs[1])
+        nodetree.links.new(nodes['roughnesscrack'].outputs['Color'],nodes['roughnessmix'].inputs[2])
+        nodetree.links.new(nodes['normalconcrete'].outputs['Color'],nodes['normalmix'].inputs[1])
+        nodetree.links.new(nodes['normalcrack'].outputs['Color'],nodes['normalmix'].inputs[2])
+
+        # add appropriate factors for scaling mixrgb nodes
+        nodetree.links.new(nodes['albedocrack'].outputs['Alpha'],nodes['albedomix'].inputs[0]) # value for albedomix comes for crack map alpha
+        nodes['roughnessmix'].inputs[0].default_value=0.5
+        nodes['normalmix'].inputs[0].default_value=0.9
     
-    # link crack map images to the above nodes
-    bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
-    nodes['albedocrack'].image=bpy.data.images['albedo1.png']
-    bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
-    nodes['roughnesscrack'].image=bpy.data.images['roughness1.png']
-    bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
-    nodes['normalcrack'].image=bpy.data.images['normals1.png']
-    
-    # create mix rgb nodes to mix crack maps and original image pbr maps
-    nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].name='albedomix'
-    nodes['albedomix'].location=[-400,450]
-    nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].name='roughnessmix'
-    nodes['roughnessmix'].location=[-400,-150]
-    nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].name='normalmix'
-    nodes['normalmix'].location=[-400,-750]
-    
-    # link crack and original map nodes to mixrgb
-    nodetree.links.new(nodes['albedoconcrete'].outputs['Color'],nodes['albedomix'].inputs[1])
-    nodetree.links.new(nodes['albedocrack'].outputs['Color'],nodes['albedomix'].inputs[2])
-    nodetree.links.new(nodes['roughnessconcrete'].outputs['Color'],nodes['roughnessmix'].inputs[1])
-    nodetree.links.new(nodes['roughnesscrack'].outputs['Color'],nodes['roughnessmix'].inputs[2])
-    nodetree.links.new(nodes['normalconcrete'].outputs['Color'],nodes['normalmix'].inputs[1])
-    nodetree.links.new(nodes['normalcrack'].outputs['Color'],nodes['normalmix'].inputs[2])
-    
-    # add appropriate factors for scaling mixrgb nodes
-    nodetree.links.new(nodes['albedocrack'].outputs['Alpha'],nodes['albedomix'].inputs[0]) # value for albedomix comes for crack map alpha
-    nodes['roughnessmix'].inputs[0].default_value=0.5
-    nodes['normalmix'].inputs[0].default_value=0.9
-    
-    #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
-    nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['basebsdf'].inputs['Color'])
-    #nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['specbsdf'].inputs['Color'])
-    nodetree.links.new(nodes['roughnessmix'].outputs['Color'],nodes['specbsdf'].inputs['Roughness'])
-    nodetree.links.new(nodes['normalmix'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
+        #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
+        nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['basebsdf'].inputs['Color'])
+        #nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['specbsdf'].inputs['Color'])
+        nodetree.links.new(nodes['roughnessmix'].outputs['Color'],nodes['specbsdf'].inputs['Roughness'])
+        nodetree.links.new(nodes['normalmix'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
+    else:
+
 	
 	# random albedo and other map rgb and mix nodes for random sampling
     nodes.new('ShaderNodeRGB')
