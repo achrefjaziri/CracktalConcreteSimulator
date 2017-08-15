@@ -245,7 +245,43 @@ def render(filepath, frames=1, samples=6):
 	bpy.data.scenes['Scene'].render.resolution_percentage=100
     # before rendering, set the sceen camera to the camera that you created
 	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
-	bpy.ops.render.render(write_still=True)
+
+    '''
+    # Commented code can later potentially be used to get the result directly from the CompositorLayer 
+    # and pipe convert and reshape it into a numpy array
+    # switch on nodes
+    bpy.context.scene.use_nodes = True
+    tree = bpy.context.scene.node_tree
+    links = tree.links
+    
+    # create input render layer node
+    rl = tree.nodes.new('CompositorNodeRLayers')
+    rl.location = 185, 285
+    
+    # create output node
+    v = tree.nodes.new('CompositorNodeViewer')
+    v.location = 750, 210
+    v.use_alpha = False
+    
+    # Links
+    links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input
+    '''
+    bpy.ops.render.render(write_still=True)
+    '''
+    # get viewer pixels
+    pixels = bpy.data.images['Viewer Node'].pixels
+    print(len(pixels))  # size is always width * height * 4 (rgba)
+    
+    # copy buffer to numpy array for faster manipulation
+    arr = np.array(pixels)
+    print(arr.shape)
+    arr = arr.reshape((2048, 2048, 4))
+    print(arr.shape)
+    
+    import scipy.misc
+    
+    scipy.misc.imsave('outputfile.png', arr)
+    '''
 	
 def rendergt(filepath, frames=1, samples=6):
 	bpy.data.scenes['Scene'].frame_end =frames
@@ -332,7 +368,6 @@ if __name__ == "__main__":
 	if checkmode!='OBJECT':
 		bpy.ops.object.mode_set(mode='OBJECT')
 	# if you are running from blender text editor uncomment below line and link blenderpython folder properly here
-	os.chdir('/home/sreenivas/blenderpython')
 	sampleandrender(nsamples=100)
 
 	
