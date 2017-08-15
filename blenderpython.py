@@ -127,9 +127,28 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     nodes['roughnessconcrete'].image=bpy.data.images['roughness.png']
     bpy.ops.image.open(filepath='testimagesblender/concretemaps/normal.png')
     nodes['normalconcrete'].image=bpy.data.images['normal.png']
-    
-    
-    
+
+    '''
+    # Possible way of feeding in numpy data into textures 
+    imgT = bpy.data.images.new("MyImage", width=2048, height=2048)
+
+    testarray = np.random.randint(0, 255, size=(2048, 2048, 3))
+    ostream = []
+    for i in range(0, 2048, 1):
+        for j in range(0, 2048, 1):
+            v = testarray[i][j]
+
+            ostream.append(v[0])  # Red
+            ostream.append(v[1])  # Green
+            ostream.append(v[2])  # Blue
+            ostream.append(1)  # Alpha
+    imgT.pixels = ostream
+
+    nodes['albedoconcrete'].image = imgT
+    nodes['roughnessconcrete'].image = imgT
+    nodes['normalconcrete'].image = imgT
+    '''
+
     ## crack nodes  
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='albedocrack' #albedo crack
@@ -237,14 +256,14 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     
     
 def render(filepath, frames=1, samples=6):
-	bpy.data.scenes['Scene'].frame_end =frames
-	bpy.data.scenes['Scene'].render.filepath = filepath
-	bpy.data.scenes['Scene'].cycles.samples = samples
-	bpy.data.scenes['Scene'].render.resolution_x=2048
-	bpy.data.scenes['Scene'].render.resolution_y=2048
-	bpy.data.scenes['Scene'].render.resolution_percentage=100
+    bpy.data.scenes['Scene'].frame_end =frames
+    bpy.data.scenes['Scene'].render.filepath = filepath
+    bpy.data.scenes['Scene'].cycles.samples = samples
+    bpy.data.scenes['Scene'].render.resolution_x=2048
+    bpy.data.scenes['Scene'].render.resolution_y=2048
+    bpy.data.scenes['Scene'].render.resolution_percentage=100
     # before rendering, set the sceen camera to the camera that you created
-	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
+    bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
 
     '''
     # Commented code can later potentially be used to get the result directly from the CompositorLayer 
@@ -266,7 +285,9 @@ def render(filepath, frames=1, samples=6):
     # Links
     links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input
     '''
+
     bpy.ops.render.render(write_still=True)
+
     '''
     # get viewer pixels
     pixels = bpy.data.images['Viewer Node'].pixels
