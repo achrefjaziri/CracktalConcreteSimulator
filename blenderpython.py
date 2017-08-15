@@ -1,6 +1,8 @@
 import bpy
 import math
 import os
+import numpy as np
+import colorsys
 
 def removeexistingobjects():
     check = bpy.data.objects is not None
@@ -63,7 +65,7 @@ def lightsource():
     bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0,1.0,1.0,1.0]
     bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
 
-def mastershader():
+def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0],scaleval=[1,1,1]):
     # add a base primitive mesh. in this case a plane mesh is added at origin 
     bpy.ops.mesh.primitive_plane_add(location=(0,-2.0,5.5))
     # default object name is 'Plane'. or index 2 in this case
@@ -89,136 +91,142 @@ def mastershader():
     nodes = bpy.data.materials['concrete'].node_tree.nodes
     nodes.new('ShaderNodeBsdfGlossy')
     # give names for nodes for easy understanding
-    nodes['Diffuse BSDF'].name = 'basebsdf1'
-    nodes['Glossy BSDF'].name = 'specbsdf1'
+    nodes['Diffuse BSDF'].name = 'basebsdf'
+    nodes['Glossy BSDF'].name = 'specbsdf'
     nodes.new('ShaderNodeMixShader')
-    nodes['Mix Shader'].name='mixshader1'
+    nodes['Mix Shader'].name='mixbasespec'
     
-    nodes['basebsdf1'].inputs['Roughness'].default_value = 0.601 # based on curet database https://wiki.blender.org/index.php/User:Guiseppe/Oren_Nayar
+    nodes['basebsdf'].inputs['Roughness'].default_value = 0.601 # based on curet database https://wiki.blender.org/index.php/User:Guiseppe/Oren_Nayar
     
     # you can modify nodes location from the script. useful for viewing in node editor. This is mainly for viewing easily.
     nodes['Material Output'].location=[650,300]
-    nodes['mixshader1'].location=[450,100]
+    nodes['mixbasespec'].location=[450,100]
     nodes.new('ShaderNodeFresnel')
     nodes['Fresnel'].name='fresnel1'
     nodes['fresnel1'].location=[200,500]
     
     # Now to link node inputs and outputs
-    nodetree.links.new(nodes['basebsdf1'].outputs['BSDF'],nodes['mixshader1'].inputs[1]) # index 1 corresponds to mix shader's shader input 1
-    nodetree.links.new(nodes['specbsdf1'].outputs['BSDF'],nodes['mixshader1'].inputs[2])
-    nodetree.links.new(nodes['fresnel1'].outputs[0],nodes['mixshader1'].inputs[0])
-    nodetree.links.new(nodes['mixshader1'].outputs[0],nodes['Material Output'].inputs['Surface'])
+    nodetree.links.new(nodes['basebsdf'].outputs['BSDF'],nodes['mixbasespec'].inputs[1]) # index 1 corresponds to mix shader's shader input 1
+    nodetree.links.new(nodes['specbsdf'].outputs['BSDF'],nodes['mixbasespec'].inputs[2])
+    nodetree.links.new(nodes['fresnel1'].outputs[0],nodes['mixbasespec'].inputs[0])
+    nodetree.links.new(nodes['mixbasespec'].outputs[0],nodes['Material Output'].inputs['Surface'])
     nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='imagetex1' #albedo map1
-    nodes['imagetex1'].location=[-600,600]
+    nodes['Image Texture'].name='albedoconcrete' #albedo concrete
+    nodes['albedoconcrete'].location=[-600,600]
     nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='imagetex2' #roughness map1
-    nodes['imagetex2'].location=[-600,0]
+    nodes['Image Texture'].name='roughnessconcrete' #roughness concrete
+    nodes['roughnessconcrete'].location=[-600,0]
     nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='imagetex3' #normal map1
-    nodes['imagetex3'].location=[-600,-600]
+    nodes['Image Texture'].name='normalconcrete' #normal concrete
+    nodes['normalconcrete'].location=[-600,-600]
     
     #link images to imagetexture node
     bpy.ops.image.open(filepath='testimagesblender/concretemaps/albedo.png') #first open image to link
-    nodes['imagetex1'].image=bpy.data.images['albedo.png']
+    nodes['albedoconcrete'].image=bpy.data.images['albedo.png']
     bpy.ops.image.open(filepath='testimagesblender/concretemaps/roughness.png')
-    nodes['imagetex2'].image=bpy.data.images['roughness.png']
+    nodes['roughnessconcrete'].image=bpy.data.images['roughness.png']
     bpy.ops.image.open(filepath='testimagesblender/concretemaps/normal.png')
-    nodes['imagetex3'].image=bpy.data.images['normal.png']
+    nodes['normalconcrete'].image=bpy.data.images['normal.png']
     
     
     
     ## crack nodes  
     nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='imagetex4' #albedo crack
-    nodes['imagetex4'].location=[-600,300]
+    nodes['Image Texture'].name='albedocrack' #albedo crack
+    nodes['albedocrack'].location=[-600,300]
     nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='imagetex5' #roughness crack
-    nodes['imagetex5'].location=[-600,-300]
+    nodes['Image Texture'].name='roughnesscrack' #roughness crack
+    nodes['roughnesscrack'].location=[-600,-300]
     nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name='imagetex6' #normal crack
-    nodes['imagetex6'].location=[-600,-900]
+    nodes['Image Texture'].name='normalcrack' #normal crack
+    nodes['normalcrack'].location=[-600,-900]
     
     # link crack map images to the above nodes
     bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
-    nodes['imagetex4'].image=bpy.data.images['albedo1.png']
+    nodes['albedocrack'].image=bpy.data.images['albedo1.png']
     bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
-    nodes['imagetex5'].image=bpy.data.images['roughness1.png']
+    nodes['roughnesscrack'].image=bpy.data.images['roughness1.png']
     bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
-    nodes['imagetex6'].image=bpy.data.images['normals1.png']
+    nodes['normalcrack'].image=bpy.data.images['normals1.png']
     
     # create mix rgb nodes to mix crack maps and original image pbr maps
     nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].name='mix1'
-    nodes['mix1'].location=[-400,450]
+    nodes['Mix'].name='albedomix'
+    nodes['albedomix'].location=[-400,450]
     nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].name='mix2'
-    nodes['mix2'].location=[-400,-150]
+    nodes['Mix'].name='roughnessmix'
+    nodes['roughnessmix'].location=[-400,-150]
     nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].name='mix3'
-    nodes['mix3'].location=[-400,-750]
+    nodes['Mix'].name='normalmix'
+    nodes['normalmix'].location=[-400,-750]
     
     # link crack and original map nodes to mixrgb
-    nodetree.links.new(nodes['imagetex1'].outputs['Color'],nodes['mix1'].inputs[1])
-    nodetree.links.new(nodes['imagetex4'].outputs['Color'],nodes['mix1'].inputs[2])
-    nodetree.links.new(nodes['imagetex2'].outputs['Color'],nodes['mix2'].inputs[1])
-    nodetree.links.new(nodes['imagetex5'].outputs['Color'],nodes['mix2'].inputs[2])
-    nodetree.links.new(nodes['imagetex3'].outputs['Color'],nodes['mix3'].inputs[1])
-    nodetree.links.new(nodes['imagetex6'].outputs['Color'],nodes['mix3'].inputs[2])
+    nodetree.links.new(nodes['albedoconcrete'].outputs['Color'],nodes['albedomix'].inputs[1])
+    nodetree.links.new(nodes['albedocrack'].outputs['Color'],nodes['albedomix'].inputs[2])
+    nodetree.links.new(nodes['roughnessconcrete'].outputs['Color'],nodes['roughnessmix'].inputs[1])
+    nodetree.links.new(nodes['roughnesscrack'].outputs['Color'],nodes['roughnessmix'].inputs[2])
+    nodetree.links.new(nodes['normalconcrete'].outputs['Color'],nodes['normalmix'].inputs[1])
+    nodetree.links.new(nodes['normalcrack'].outputs['Color'],nodes['normalmix'].inputs[2])
     
     # add appropriate factors for scaling mixrgb nodes
-    nodetree.links.new(nodes['imagetex4'].outputs['Alpha'],nodes['mix1'].inputs[0]) # value for mix1 comes for crack map alpha
-    nodes['mix2'].inputs[0].default_value=0.5
-    nodes['mix3'].inputs[0].default_value=0.9
+    nodetree.links.new(nodes['albedocrack'].outputs['Alpha'],nodes['albedomix'].inputs[0]) # value for albedomix comes for crack map alpha
+    nodes['roughnessmix'].inputs[0].default_value=0.5
+    nodes['normalmix'].inputs[0].default_value=0.9
     
     #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
-    nodetree.links.new(nodes['mix1'].outputs['Color'],nodes['basebsdf1'].inputs['Color'])
-    #nodetree.links.new(nodes['mix1'].outputs['Color'],nodes['specbsdf1'].inputs['Color'])
-    nodetree.links.new(nodes['mix2'].outputs['Color'],nodes['specbsdf1'].inputs['Roughness'])
-    nodetree.links.new(nodes['mix3'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
+    nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['basebsdf'].inputs['Color'])
+    #nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['specbsdf'].inputs['Color'])
+    nodetree.links.new(nodes['roughnessmix'].outputs['Color'],nodes['specbsdf'].inputs['Roughness'])
+    nodetree.links.new(nodes['normalmix'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
 	
 	# random albedo and other map rgb and mix nodes for random sampling
     nodes.new('ShaderNodeRGB')
-    nodes['RGB'].name='rgb1'
-    nodes['rgb1'].location=[-600,900]
+    nodes['RGB'].name='samplingalbedorgb'
+    nodes['samplingalbedorgb'].location=[-600,900]
     nodes.new('ShaderNodeMapping')
-    nodes['Mapping'].name='map1'
-    nodes['map1'].location=[-1200,0]
-    nodes['map1'].vector_type='VECTOR'
+    nodes['Mapping'].name='samplingmap'
+    nodes['samplingmap'].location=[-1200,0]
+    nodes['samplingmap'].vector_type='VECTOR'
     nodes.new('ShaderNodeVectorMath')
     nodes['Vector Math'].operation='ADD'
-    nodes['Vector Math'].name='math1'
-    nodes['math1'].location=[-1500,0]
+    nodes['Vector Math'].name='addtranslation'
+    nodes['addtranslation'].location=[-1500,0]
     nodes.new('ShaderNodeRGB')
-    nodes['RGB'].name='rgb2'
-    nodes['rgb2'].location=[-1800,0]
+    nodes['RGB'].name='samplingtranslationrgb'
+    nodes['samplingtranslationrgb'].location=[-1800,0]
     nodes.new('ShaderNodeTexCoord')
     nodes['Texture Coordinate'].name='texcoord1'
     nodes['texcoord1'].location=[-1800,-300]
     nodes.new('ShaderNodeMixRGB')
     nodes['Mix'].location=[-300,750]
-    nodes['Mix'].name='mix4'
-    nodes['mix4'].inputs['Fac'].default_value=0.85
+    nodes['Mix'].name='samplingalbedomix'
+    nodes['samplingalbedomix'].inputs['Fac'].default_value=0.85
     
     # links for sampling nodes
-    nodetree.links.new(nodes['mix4'].inputs['Color1'],nodes['rgb1'].outputs['Color'])
-    nodetree.links.new(nodes['mix4'].inputs['Color2'],nodes['imagetex1'].outputs['Color'])
-    nodetree.links.new(nodes['mix4'].outputs['Color'],nodes['mix1'].inputs['Color1'])
-    nodetree.links.new(nodes['map1'].outputs['Vector'],nodes['imagetex1'].inputs['Vector'])
-    nodetree.links.new(nodes['map1'].outputs['Vector'],nodes['imagetex2'].inputs['Vector'])
-    nodetree.links.new(nodes['map1'].outputs['Vector'],nodes['imagetex3'].inputs['Vector'])
-    nodetree.links.new(nodes['math1'].outputs['Vector'],nodes['map1'].inputs['Vector'])
-    nodetree.links.new(nodes['math1'].inputs[0],nodes['rgb2'].outputs['Color'])
-    nodetree.links.new(nodes['math1'].inputs[1],nodes['texcoord1'].outputs['UV'])
+    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'],nodes['samplingalbedorgb'].outputs['Color'])
+    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color2'],nodes['albedoconcrete'].outputs['Color'])
+    nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'],nodes['albedomix'].inputs['Color1'])
+    nodetree.links.new(nodes['samplingmap'].outputs['Vector'],nodes['albedoconcrete'].inputs['Vector'])
+    nodetree.links.new(nodes['samplingmap'].outputs['Vector'],nodes['roughnessconcrete'].inputs['Vector'])
+    nodetree.links.new(nodes['samplingmap'].outputs['Vector'],nodes['normalconcrete'].inputs['Vector'])
+    nodetree.links.new(nodes['addtranslation'].outputs['Vector'],nodes['samplingmap'].inputs['Vector'])
+    nodetree.links.new(nodes['addtranslation'].inputs[0],nodes['samplingtranslationrgb'].outputs['Color'])
+    nodetree.links.new(nodes['addtranslation'].inputs[1],nodes['texcoord1'].outputs['UV'])
     
     
     # sampling values passed to the function
-    nodes['map1'].scale=[2,2,2]
-    nodes['map1'].rotation=[20*math.pi/180,20*math.pi/180,20*math.pi/180]
+    nodes['samplingmap'].scale=[scaleval[0],scaleval[1],scaleval[2]]
+    nodes['samplingmap'].rotation=[rotationval[0]*math.pi/180,rotationval[1]*math.pi/180,rotationval[2]*math.pi/180]
     # rgb values for albedo change. need to convert hsv to rgb to use it here.
-    nodes['rgb1'].outputs[0].default_value[0]=0.242
-    nodes['rgb1'].outputs[0].default_value[1]=0.118
-    nodes['rgb1'].outputs[0].default_value[2]=0.0242	
+    rgbval = colorsys.hsv_to_rgb(albedoval[0],albedoval[1],albedoval[2])
+    nodes['samplingalbedorgb'].outputs[0].default_value[0]=rgbval[0]
+    nodes['samplingalbedorgb'].outputs[0].default_value[1]=rgbval[1]
+    nodes['samplingalbedorgb'].outputs[0].default_value[2]=rgbval[2]
+
+    # translation sampling
+    nodes['samplingtranslationrgb'].outputs[0].default_value[0] = locationval[0]
+    nodes['samplingtranslationrgb'].outputs[0].default_value[1] = locationval[1]
+    nodes['samplingtranslationrgb'].outputs[0].default_value[2] = locationval[2]
 	
 	#now we need to uv unwrap over the entire mesh
     bpy.ops.object.mode_set(mode = 'EDIT')
@@ -237,7 +245,7 @@ def render(filepath, frames=1, samples=6):
 	bpy.data.scenes['Scene'].render.resolution_percentage=100
     # before rendering, set the sceen camera to the camera that you created
 	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
-	bpy.ops.render.render(animation=True)
+	bpy.ops.render.render(write_still=True)
 	
 def rendergt(filepath, frames=1, samples=6):
 	bpy.data.scenes['Scene'].frame_end =frames
@@ -254,14 +262,13 @@ def rendergt(filepath, frames=1, samples=6):
 	nodes.new('ShaderNodeEmission')
 	nodes['Emission'].name = 'emit1'
 	nodes['emit1'].location=[450,-100]
-	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['imagetex4'].outputs['Color'])
+	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['albedocrack'].outputs['Color'])
 	nodetree.links.new(nodes['emit1'].outputs['Emission'],nodes['Material Output'].inputs['Surface'])
 	
 	# remove displacement links
 	for l in nodes['Material Output'].inputs['Displacement'].links:
 		nodetree.links.remove(l)
-	
-	bpy.ops.render.render(animation=True)
+	bpy.ops.render.render(write_still=True)
 	
 
 def rendernp(filepath, frames=1, samples=6):
@@ -276,9 +283,47 @@ def rendernp(filepath, frames=1, samples=6):
 	
 	nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
 	nodes = bpy.data.materials['concrete'].node_tree.nodes
-	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['mix3'].outputs['Color'])
-	bpy.ops.render.render(animation=True)
-        
+	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['normalmix'].outputs['Color'])
+	bpy.ops.render.render(write_still=True)
+
+
+def sampleandrender(nsamples = 100):
+    hval = np.random.normal(0.5, 0.3, size=(nsamples))
+    sval = np.random.normal(0.5, 0.3, size=(nsamples))
+    hval = np.clip(hval, 0, 1)
+    sval = np.clip(sval, 0, 1)
+    vval = np.empty(nsamples,dtype='float64')
+    vval.fill(0.529)
+    locationx = np.random.uniform(0, 1, size=(nsamples))
+    locationy = np.random.uniform(0, 1, size=(nsamples))
+    locationz = np.random.uniform(0, 1, size=(nsamples))
+    rotationx = np.random.uniform(0, 20, size=(nsamples))
+    rotationy = np.random.uniform(0, 20, size=(nsamples))
+    rotationz = np.random.uniform(0, 20, size=(nsamples))
+    scalex = np.random.uniform(0.25, 2, size=(nsamples))
+    scaley = np.random.uniform(0.25, 2, size=(nsamples))
+    scalez = np.random.uniform(0.25, 2, size=(nsamples))
+    for i in range(nsamples):
+        albedoval = [hval[i],sval[i],vval[i]]
+        locationval = [locationx[i],locationy[i],locationz[i]]
+        rotationval = [rotationx[i], rotationy[i], rotationz[i]]
+        scaleval = [scalex[i], scaley[i], scalez[i]]
+        # remove existing objects present in the scene
+        removeexistingobjects()
+        # modify existing camera
+        camerasettings()
+        # modify existing light source
+        lightsource()
+        # master shader for material with mesh
+        mastershader(albedoval,locationval,rotationval,scaleval)
+        # render the engine
+        render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=6)
+        # render groundtruth for crack
+        rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=6)
+        # render normalmap
+        rendernp(filepath=os.path.join('testimagesblender/normalmaps/np'+str(i)+'.png'), frames=1, samples=6)
+
+
 if __name__ == "__main__": 
 	#ensure that cycles engine is set for the basic scene. predefined object name for scene is 'Scene'. Also can be accesed by index 0.
 	bpy.data.scenes['Scene'].render.engine='CYCLES'
@@ -287,21 +332,9 @@ if __name__ == "__main__":
 	if checkmode!='OBJECT':
 		bpy.ops.object.mode_set(mode='OBJECT')
 	# if you are running from blender text editor uncomment below line and link blenderpython folder properly here
-	#os.chdir('/yourpath/blenderpython')
-	# remove existing objects present in the scene
-	removeexistingobjects()
-	# modify existing camera
-	camerasettings()
-	# modify existing light source
-	lightsource()
-	# master shader for material with mesh
-	mastershader()
-	# render the engine
-	render(filepath = 'testimagesblender/results/out', frames = 1, samples = 6)
-	# render groundtruth for crack
-	rendergt(filepath = 'testimagesblender/groundtruth/gt', frames = 1, samples = 6)
-	# render normalmap
-	rendernp(filepath = 'testimagesblender/normalmaps/np', frames = 1, samples = 6)
+	os.chdir('/home/sreenivas/blenderpython')
+	sampleandrender(nsamples=100)
+
 	
 	
    
