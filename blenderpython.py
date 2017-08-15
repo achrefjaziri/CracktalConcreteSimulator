@@ -5,7 +5,7 @@ import numpy as np
 import colorsys
 
 # Change this later into either properly sampled parameters or an argument parser
-cracked = True
+cracked = False
 
 def removeexistingobjects():
     check = bpy.data.objects is not None
@@ -131,26 +131,6 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     bpy.ops.image.open(filepath='testimagesblender/concretemaps/normal.png')
     nodes['normalconcrete'].image=bpy.data.images['normal.png']
 
-    '''
-    # Possible way of feeding in numpy data into textures 
-    imgT = bpy.data.images.new("MyImage", width=2048, height=2048)
-
-    testarray = np.random.randint(0, 255, size=(2048, 2048, 3))
-    ostream = []
-    for i in range(0, 2048, 1):
-        for j in range(0, 2048, 1):
-            v = testarray[i][j]
-
-            ostream.append(v[0])  # Red
-            ostream.append(v[1])  # Green
-            ostream.append(v[2])  # Blue
-            ostream.append(1)  # Alpha
-    imgT.pixels = ostream
-
-    nodes['albedoconcrete'].image = imgT
-    nodes['roughnessconcrete'].image = imgT
-    nodes['normalconcrete'].image = imgT
-    '''
     # random albedo and other map rgb and mix nodes for random sampling
     nodes.new('ShaderNodeRGB')
     nodes['RGB'].name = 'samplingalbedorgb'
@@ -172,7 +152,7 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     nodes.new('ShaderNodeMixRGB')
     nodes['Mix'].location = [-300, 750]
     nodes['Mix'].name = 'samplingalbedomix'
-    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.85
+    nodes['samplingalbedomix'].inputs['Fac'].default_value = 1
 
     # links for sampling nodes
     nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'], nodes['samplingalbedorgb'].outputs['Color'])
@@ -219,6 +199,24 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
         nodes['roughnesscrack'].image=bpy.data.images['roughness1.png']
         bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
         nodes['normalcrack'].image=bpy.data.images['normals1.png']
+
+        '''
+        #TODO: replace above code with below code once fractal is included
+        # Possible way of feeding in numpy data into textures 
+        # initialize a bpy data image structure
+        imgT = bpy.data.images.new("MyImage", width=2048, height=2048)
+        # RGBA random array as placeholder
+        testarray = np.random.rand(2048,2048,4)
+        # set alpha to 1
+        testarray[:,:,3] = 1
+        # flatten the array and convert to a list
+        imgT.pixels = testarray.flatten().tolist()
+
+        # feed new texture into appropriate nodes
+        nodes['albedocrack'].image = imgT
+        nodes['roughnesscrack'].image = imgT
+        nodes['normalcrack'].image = imgT
+        '''
 
         # create mix rgb nodes to mix crack maps and original image pbr maps
         nodes.new('ShaderNodeMixRGB')
@@ -390,14 +388,15 @@ def sampleandrender(nsamples = 100):
         # master shader for material with mesh
         mastershader(albedoval,locationval,rotationval,scaleval)
         # render the engine
-        render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=6)
+        #TODO: samples set to 1 for debugging purposes. Please remove
+        render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=1)
         # render groundtruth for crack
         if cracked:
-            rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=6)
+            rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=1)
         # render normalmap
-            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np'+str(i)+'.png'), frames=1, samples=6)
+            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np'+str(i)+'.png'), frames=1, samples=1)
         else:
-            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np' + str(i) + '.png'), frames=1, samples=6)
+            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np' + str(i) + '.png'), frames=1, samples=1)
 
 
 if __name__ == "__main__": 
