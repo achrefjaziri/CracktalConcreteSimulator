@@ -5,7 +5,7 @@ import numpy as np
 import colorsys
 
 # Change this later into either properly sampled parameters or an argument parser
-cracked = False
+cracked = True
 
 def removeexistingobjects():
     check = bpy.data.objects is not None
@@ -36,7 +36,7 @@ def camerasettings():
     # by default camera type is perspective. uncomment below line for changing camera to orthographic.
     #bpy.data.cameras['Camera'].type='ORTHO'     #PERSP for perspective. default orthographic scale is 7.314
     # focal length of camera
-    bpy.data.cameras['Camera'].lens = 35.00 
+    bpy.data.cameras['Camera'].lens = 35.00
     # focal length unit
     bpy.data.cameras['Camera'].lens_unit = 'MILLIMETERS' #FOV for field of view
     # note: you can add camera presets like samsung galaxy s4.
@@ -46,46 +46,46 @@ def camerasettings():
 def lightsource():
     # add lamp
     bpy.ops.object.lamp_add(type='SUN')
-    # change sun location. 
+    # change sun location.
     bpy.data.objects['Sun'].location = [0.0,-5.0,5.0]
     bpy.data.objects['Sun'].rotation_euler=[59*math.pi/180,0,0]
-    
-    # you can modify object names. example given below. uncomment if needed. 
+
+    # you can modify object names. example given below. uncomment if needed.
     # if uncommented upcoming commands should also be modified accordingly
     #bpy.data.lamps[0].name = 'Sun'
     #bpy.data.objects['Sun'].name = 'Sun'
-    # you can add more light sources. uncomment below line for example light source 
+    # you can add more light sources. uncomment below line for example light source
     #bpy.ops.object.lamp_add(type='POINT')
-    
-    
-    # change rotation of sun's direction vector. 
+
+
+    # change rotation of sun's direction vector.
     bpy.data.objects['Sun'].rotation_euler=[59*math.pi/180,0.0,0.0]
     # in order to change color, strength of sun, we have to use nodes. also node editing is quite useful for designing layers to your rendering
     bpy.data.lamps['Sun'].use_nodes=True
     # in the above statement we used 'Lamp' instead of index 0. The default name of lamps is 'Lamp' as described in the above comments.
-    
+
     # set color and strength value of sun using nodes.
     bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0,1.0,1.0,1.0]
     bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
 
 def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0],scaleval=[1,1,1]):
-    # add a base primitive mesh. in this case a plane mesh is added at origin 
+    # add a base primitive mesh. in this case a plane mesh is added at origin
     bpy.ops.mesh.primitive_plane_add(location=(0,-2.0,5.5))
     # default object name is 'Plane'. or index 2 in this case
     # set scale and rotation
     bpy.data.objects['Plane'].scale=[6.275,6.275,6.275]
     bpy.data.objects['Plane'].rotation_euler=[105*math.pi/180,0,0]
-    
+
     #add material to the object. first create a new material
     bpy.ops.material.new()
     # give a name to material if needed. new material default name 'Material' or access 0 index
     bpy.data.materials['Material'].name='concrete'
     # link material to the plane mesh
     bpy.data.objects['Plane'].active_material=bpy.data.materials['concrete']
-    
+
     # now in order to design the master shader for our material with concrete maps we need to use node editor.
     bpy.data.materials['concrete'].use_nodes=True
-    
+
     # MASTER SHADER
     # material usually has diffuse bsdf connected to its surface input. check node editor by pressing shift+f3
     # master shader for general material is based on "PBR workflows in Cycles Render Engine" by Joonas Sairiala
@@ -98,16 +98,16 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     nodes['Glossy BSDF'].name = 'specbsdf'
     nodes.new('ShaderNodeMixShader')
     nodes['Mix Shader'].name='mixbasespec'
-    
+
     nodes['basebsdf'].inputs['Roughness'].default_value = 0.601 # based on curet database https://wiki.blender.org/index.php/User:Guiseppe/Oren_Nayar
-    
+
     # you can modify nodes location from the script. useful for viewing in node editor. This is mainly for viewing easily.
     nodes['Material Output'].location=[650,300]
     nodes['mixbasespec'].location=[450,100]
     nodes.new('ShaderNodeFresnel')
     nodes['Fresnel'].name='fresnel1'
     nodes['fresnel1'].location=[200,500]
-    
+
     # Now to link node inputs and outputs
     nodetree.links.new(nodes['basebsdf'].outputs['BSDF'],nodes['mixbasespec'].inputs[1]) # index 1 corresponds to mix shader's shader input 1
     nodetree.links.new(nodes['specbsdf'].outputs['BSDF'],nodes['mixbasespec'].inputs[2])
@@ -122,7 +122,7 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name='normalconcrete' #normal concrete
     nodes['normalconcrete'].location=[-600,-600]
-    
+
     #link images to imagetexture node
     bpy.ops.image.open(filepath='testimagesblender/concretemaps/albedo.png') #first open image to link
     nodes['albedoconcrete'].image=bpy.data.images['albedo.png']
@@ -151,6 +151,54 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
     nodes['roughnessconcrete'].image = imgT
     nodes['normalconcrete'].image = imgT
     '''
+    # random albedo and other map rgb and mix nodes for random sampling
+    nodes.new('ShaderNodeRGB')
+    nodes['RGB'].name = 'samplingalbedorgb'
+    nodes['samplingalbedorgb'].location = [-600, 900]
+    nodes.new('ShaderNodeMapping')
+    nodes['Mapping'].name = 'samplingmap'
+    nodes['samplingmap'].location = [-1200, 0]
+    nodes['samplingmap'].vector_type = 'VECTOR'
+    nodes.new('ShaderNodeVectorMath')
+    nodes['Vector Math'].operation = 'ADD'
+    nodes['Vector Math'].name = 'addtranslation'
+    nodes['addtranslation'].location = [-1500, 0]
+    nodes.new('ShaderNodeRGB')
+    nodes['RGB'].name = 'samplingtranslationrgb'
+    nodes['samplingtranslationrgb'].location = [-1800, 0]
+    nodes.new('ShaderNodeTexCoord')
+    nodes['Texture Coordinate'].name = 'texcoord1'
+    nodes['texcoord1'].location = [-1800, -300]
+    nodes.new('ShaderNodeMixRGB')
+    nodes['Mix'].location = [-300, 750]
+    nodes['Mix'].name = 'samplingalbedomix'
+    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.85
+
+    # links for sampling nodes
+    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'], nodes['samplingalbedorgb'].outputs['Color'])
+    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color2'], nodes['albedoconcrete'].outputs['Color'])
+
+    nodetree.links.new(nodes['samplingmap'].outputs['Vector'], nodes['albedoconcrete'].inputs['Vector'])
+    nodetree.links.new(nodes['samplingmap'].outputs['Vector'], nodes['roughnessconcrete'].inputs['Vector'])
+    nodetree.links.new(nodes['samplingmap'].outputs['Vector'], nodes['normalconcrete'].inputs['Vector'])
+    nodetree.links.new(nodes['addtranslation'].outputs['Vector'], nodes['samplingmap'].inputs['Vector'])
+    nodetree.links.new(nodes['addtranslation'].inputs[0], nodes['samplingtranslationrgb'].outputs['Color'])
+    nodetree.links.new(nodes['addtranslation'].inputs[1], nodes['texcoord1'].outputs['UV'])
+
+    # sampling values passed to the function
+    nodes['samplingmap'].scale = [scaleval[0], scaleval[1], scaleval[2]]
+    nodes['samplingmap'].rotation = [rotationval[0] * math.pi / 180, rotationval[1] * math.pi / 180,
+                                     rotationval[2] * math.pi / 180]
+    # rgb values for albedo change. need to convert hsv to rgb to use it here.
+    rgbval = colorsys.hsv_to_rgb(albedoval[0], albedoval[1], albedoval[2])
+    nodes['samplingalbedorgb'].outputs[0].default_value[0] = rgbval[0]
+    nodes['samplingalbedorgb'].outputs[0].default_value[1] = rgbval[1]
+    nodes['samplingalbedorgb'].outputs[0].default_value[2] = rgbval[2]
+
+    # translation sampling
+    nodes['samplingtranslationrgb'].outputs[0].default_value[0] = locationval[0]
+    nodes['samplingtranslationrgb'].outputs[0].default_value[1] = locationval[1]
+    nodes['samplingtranslationrgb'].outputs[0].default_value[2] = locationval[2]
 
     ## crack nodes
     if cracked:
@@ -195,65 +243,18 @@ def mastershader(albedoval=[0.5,0.5,0.5],locationval=[0,0,0],rotationval=[0,0,0]
         nodetree.links.new(nodes['albedocrack'].outputs['Alpha'],nodes['albedomix'].inputs[0]) # value for albedomix comes for crack map alpha
         nodes['roughnessmix'].inputs[0].default_value=0.5
         nodes['normalmix'].inputs[0].default_value=0.9
-    
+
         #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
         nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['basebsdf'].inputs['Color'])
         #nodetree.links.new(nodes['albedomix'].outputs['Color'],nodes['specbsdf'].inputs['Color'])
         nodetree.links.new(nodes['roughnessmix'].outputs['Color'],nodes['specbsdf'].inputs['Roughness'])
         nodetree.links.new(nodes['normalmix'].outputs['Color'],nodes['Material Output'].inputs['Displacement'])
+        nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'], nodes['albedomix'].inputs['Color1'])
     else:
-
-	
-	# random albedo and other map rgb and mix nodes for random sampling
-    nodes.new('ShaderNodeRGB')
-    nodes['RGB'].name='samplingalbedorgb'
-    nodes['samplingalbedorgb'].location=[-600,900]
-    nodes.new('ShaderNodeMapping')
-    nodes['Mapping'].name='samplingmap'
-    nodes['samplingmap'].location=[-1200,0]
-    nodes['samplingmap'].vector_type='VECTOR'
-    nodes.new('ShaderNodeVectorMath')
-    nodes['Vector Math'].operation='ADD'
-    nodes['Vector Math'].name='addtranslation'
-    nodes['addtranslation'].location=[-1500,0]
-    nodes.new('ShaderNodeRGB')
-    nodes['RGB'].name='samplingtranslationrgb'
-    nodes['samplingtranslationrgb'].location=[-1800,0]
-    nodes.new('ShaderNodeTexCoord')
-    nodes['Texture Coordinate'].name='texcoord1'
-    nodes['texcoord1'].location=[-1800,-300]
-    nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].location=[-300,750]
-    nodes['Mix'].name='samplingalbedomix'
-    nodes['samplingalbedomix'].inputs['Fac'].default_value=0.85
-    
-    # links for sampling nodes
-    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'],nodes['samplingalbedorgb'].outputs['Color'])
-    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color2'],nodes['albedoconcrete'].outputs['Color'])
-    nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'],nodes['albedomix'].inputs['Color1'])
-    nodetree.links.new(nodes['samplingmap'].outputs['Vector'],nodes['albedoconcrete'].inputs['Vector'])
-    nodetree.links.new(nodes['samplingmap'].outputs['Vector'],nodes['roughnessconcrete'].inputs['Vector'])
-    nodetree.links.new(nodes['samplingmap'].outputs['Vector'],nodes['normalconcrete'].inputs['Vector'])
-    nodetree.links.new(nodes['addtranslation'].outputs['Vector'],nodes['samplingmap'].inputs['Vector'])
-    nodetree.links.new(nodes['addtranslation'].inputs[0],nodes['samplingtranslationrgb'].outputs['Color'])
-    nodetree.links.new(nodes['addtranslation'].inputs[1],nodes['texcoord1'].outputs['UV'])
-    
-    
-    # sampling values passed to the function
-    nodes['samplingmap'].scale=[scaleval[0],scaleval[1],scaleval[2]]
-    nodes['samplingmap'].rotation=[rotationval[0]*math.pi/180,rotationval[1]*math.pi/180,rotationval[2]*math.pi/180]
-    # rgb values for albedo change. need to convert hsv to rgb to use it here.
-    rgbval = colorsys.hsv_to_rgb(albedoval[0],albedoval[1],albedoval[2])
-    nodes['samplingalbedorgb'].outputs[0].default_value[0]=rgbval[0]
-    nodes['samplingalbedorgb'].outputs[0].default_value[1]=rgbval[1]
-    nodes['samplingalbedorgb'].outputs[0].default_value[2]=rgbval[2]
-
-    # translation sampling
-    nodes['samplingtranslationrgb'].outputs[0].default_value[0] = locationval[0]
-    nodes['samplingtranslationrgb'].outputs[0].default_value[1] = locationval[1]
-    nodes['samplingtranslationrgb'].outputs[0].default_value[2] = locationval[2]
-	
-	#now we need to uv unwrap over the entire mesh
+        nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'], nodes['basebsdf'].inputs['Color'])
+        nodetree.links.new(nodes['roughnessconcrete'].outputs['Color'], nodes['specbsdf'].inputs['Roughness'])
+        nodetree.links.new(nodes['normalconcrete'].outputs['Color'], nodes['Material Output'].inputs['Displacement'])
+    #now we need to uv unwrap over the entire mesh
     bpy.ops.object.mode_set(mode = 'EDIT')
     bpy.ops.mesh.select_all(action = 'SELECT')
     bpy.ops.uv.unwrap()
@@ -311,43 +312,52 @@ def render(filepath, frames=1, samples=6):
     '''
 	
 def rendergt(filepath, frames=1, samples=6):
-	bpy.data.scenes['Scene'].frame_end =frames
-	bpy.data.scenes['Scene'].render.filepath = filepath
-	bpy.data.scenes['Scene'].cycles.samples = samples
-	bpy.data.scenes['Scene'].render.resolution_x=2048
-	bpy.data.scenes['Scene'].render.resolution_y=2048
-	bpy.data.scenes['Scene'].render.resolution_percentage=100
+    bpy.data.scenes['Scene'].frame_end =frames
+    bpy.data.scenes['Scene'].render.filepath = filepath
+    bpy.data.scenes['Scene'].cycles.samples = samples
+    bpy.data.scenes['Scene'].render.resolution_x=2048
+    bpy.data.scenes['Scene'].render.resolution_y=2048
+    bpy.data.scenes['Scene'].render.resolution_percentage=100
     # before rendering, set the sceen camera to the camera that you created
-	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
-	
-	nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
-	nodes = bpy.data.materials['concrete'].node_tree.nodes
-	nodes.new('ShaderNodeEmission')
-	nodes['Emission'].name = 'emit1'
-	nodes['emit1'].location=[450,-100]
-	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['albedocrack'].outputs['Color'])
-	nodetree.links.new(nodes['emit1'].outputs['Emission'],nodes['Material Output'].inputs['Surface'])
-	
-	# remove displacement links
-	for l in nodes['Material Output'].inputs['Displacement'].links:
-		nodetree.links.remove(l)
-	bpy.ops.render.render(write_still=True)
+    bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
+
+    nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
+    nodes = bpy.data.materials['concrete'].node_tree.nodes
+    nodes.new('ShaderNodeEmission')
+    nodes['Emission'].name = 'emit1'
+    nodes['emit1'].location=[450,-100]
+    nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['albedocrack'].outputs['Color'])
+    nodetree.links.new(nodes['emit1'].outputs['Emission'],nodes['Material Output'].inputs['Surface'])
+
+    # remove displacement links
+    for l in nodes['Material Output'].inputs['Displacement'].links:
+        nodetree.links.remove(l)
+    bpy.ops.render.render(write_still=True)
 	
 
 def rendernp(filepath, frames=1, samples=6):
-	bpy.data.scenes['Scene'].frame_end =frames
-	bpy.data.scenes['Scene'].render.filepath = filepath
-	bpy.data.scenes['Scene'].cycles.samples = samples
-	bpy.data.scenes['Scene'].render.resolution_x=2048
-	bpy.data.scenes['Scene'].render.resolution_y=2048
-	bpy.data.scenes['Scene'].render.resolution_percentage=100
+    bpy.data.scenes['Scene'].frame_end =frames
+    bpy.data.scenes['Scene'].render.filepath = filepath
+    bpy.data.scenes['Scene'].cycles.samples = samples
+    bpy.data.scenes['Scene'].render.resolution_x=2048
+    bpy.data.scenes['Scene'].render.resolution_y=2048
+    bpy.data.scenes['Scene'].render.resolution_percentage=100
     # before rendering, set the sceen camera to the camera that you created
-	bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
-	
-	nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
-	nodes = bpy.data.materials['concrete'].node_tree.nodes
-	nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['normalmix'].outputs['Color'])
-	bpy.ops.render.render(write_still=True)
+    bpy.data.scenes['Scene'].camera=bpy.data.objects['Camera']
+
+    nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
+    nodes = bpy.data.materials['concrete'].node_tree.nodes
+    if cracked:
+        nodetree.links.new(nodes['emit1'].inputs['Color'],nodes['normalmix'].outputs['Color'])
+    else:
+        nodes.new('ShaderNodeEmission')
+        nodes['Emission'].name = 'emit1'
+        nodes['emit1'].location = [450, -100]
+        nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
+        nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalconcrete'].outputs['Color'])
+        for l in nodes['Material Output'].inputs['Displacement'].links:
+            nodetree.links.remove(l)
+    bpy.ops.render.render(write_still=True)
 
 
 def sampleandrender(nsamples = 100):
@@ -382,20 +392,23 @@ def sampleandrender(nsamples = 100):
         # render the engine
         render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=6)
         # render groundtruth for crack
-        rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=6)
+        if cracked:
+            rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=6)
         # render normalmap
-        rendernp(filepath=os.path.join('testimagesblender/normalmaps/np'+str(i)+'.png'), frames=1, samples=6)
+            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np'+str(i)+'.png'), frames=1, samples=6)
+        else:
+            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np' + str(i) + '.png'), frames=1, samples=6)
 
 
 if __name__ == "__main__": 
-	#ensure that cycles engine is set for the basic scene. predefined object name for scene is 'Scene'. Also can be accesed by index 0.
-	bpy.data.scenes['Scene'].render.engine='CYCLES'
-	# check if mode is object mode else set it to object mode
-	checkmode = bpy.context.active_object.mode
-	if checkmode!='OBJECT':
-		bpy.ops.object.mode_set(mode='OBJECT')
-	# if you are running from blender text editor uncomment below line and link blenderpython folder properly here
-	sampleandrender(nsamples=100)
+    #ensure that cycles engine is set for the basic scene. predefined object name for scene is 'Scene'. Also can be accesed by index 0.
+    bpy.data.scenes['Scene'].render.engine='CYCLES'
+    # check if mode is object mode else set it to object mode
+    checkmode = bpy.context.active_object.mode
+    if checkmode!='OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+    # if you are running from blender text editor uncomment below line and link blenderpython folder properly here
+    sampleandrender(nsamples=1)
 
 	
 	
