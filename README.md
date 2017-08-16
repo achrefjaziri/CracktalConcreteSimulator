@@ -36,5 +36,7 @@ Note that this is independent of your system's pip
 ~~~
 ./path/to/blender-version/python/bin/python3.5m pip install package
 ~~~
+Note that depending on your OS and Blender version the shortcut "pip" could not exist and will then be "pip3.5" or any other version suffix.
+
 
 For any questions contact: murali@fias.uni-frankfurt.de
