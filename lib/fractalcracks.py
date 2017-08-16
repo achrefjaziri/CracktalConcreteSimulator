@@ -120,17 +120,14 @@ def add_alpha_channel(img):
 
     return img
 
-def generate_fractal_cracks():
-    TOTALWIDTH = 2048.
-    DEPTH = 7
-
+def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     points = koch(DEPTH, TOTALWIDTH)
 
     # construct a square matrix and fill it with lines between points
     img = construct_matrix(TOTALWIDTH, points)
 
     # widen the line with a random gaussian blur
-    img = widen_line(img)
+    #img = widen_line(img)
 
     # random rotation and translation
     img = random_rotate(img)

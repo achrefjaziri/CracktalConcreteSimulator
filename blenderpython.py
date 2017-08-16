@@ -206,19 +206,29 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         nodes['Image Texture'].name = 'normalcrack' #normal crack
         nodes['normalcrack'].location = [-600, -900]
 
-        # TODO: current code is almost working.
+        # TODO: current code is working, but the result looks less pleasing than before?
         #  problems are albedo crack being white instead of black
         #  normals having improper format for blender internals
         generated_maps = []
         # order is: albedo, roughness, normals
-        generated_maps[0:2] = (generate_fractal_cracks())
+        generated_maps[0:2] = (generate_fractal_cracks(2048, 7))
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
+
+        for i in range(0, len(generated_maps)-1):
+            # normalize to 0-1 float range!
+            # Don't do this for the normal map as the range is already correct
+            # convert from uint8 to float
+            generated_maps[i] = generated_maps[i].astype(dtype=float)
+            generated_maps[i][:, :, 0:3] = generated_maps[i][:, :, 0:3] / 255
+
         for i in range(0, len(generated_maps)):
             # last shape index is amount of color channels
             if generated_maps[i].shape[-1] != 4:
-                generated_maps[i] = np.resize(generated_maps[i], (generated_maps[i].shape[0], generated_maps[i].shape[1], 4))
-                generated_maps[i][:,:,3] = 1
+                tmp = np.zeros((generated_maps[i].shape[0], generated_maps[i].shape[1], 4)) #place-holder
+                tmp[:,:,0:3] = generated_maps[i] # copy old 3 channels
+                tmp[:,:,3] = 1 # fill 4. alpha channel
+                generated_maps[i] = tmp # copy back
 
         # initialize empty texture structures of corresponding size
         imgT_albedo = bpy.data.images.new("albedo_image", width=2048, height=2048)
@@ -228,7 +238,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # flatten the arrays and assign them to the place-holder textures
         imgT_albedo.pixels = generated_maps[0].flatten().tolist()
         imgT_roughness.pixels = generated_maps[1].flatten().tolist()
-        # TODO: it seems normals are messed up once more due to internal blender representations....
+        # TODO: still not sure whether normal maps are in correct format
         imgT_normals.pixels = generated_maps[2].flatten().tolist()
 
         # feed new texture into appropriate nodes
@@ -236,7 +246,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         nodes['roughnesscrack'].image = imgT_roughness
         nodes['normalcrack'].image = imgT_normals
 
-        # TODO: Once above code is working the following lines can be removed
+        # OLD CODE FOR TESTING PURPOSES
         # currently this is loading textures from pngs
         # link crack map images to the above nodes
         bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
@@ -269,7 +279,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         nodetree.links.new(nodes['albedocrack'].outputs['Alpha'], nodes['albedomix'].inputs[0])
         # value for albedomix comes for crack map alpha
         nodes['roughnessmix'].inputs[0].default_value = 0.5
-        nodes['normalmix'].inputs[0].default_value = 0.9
+        nodes['normalmix'].inputs[0].default_value = 0.5
 
         #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
         nodetree.links.new(nodes['albedomix'].outputs['Color'], nodes['basebsdf'].inputs['Color'])
