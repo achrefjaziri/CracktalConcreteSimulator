@@ -2,7 +2,6 @@
 # coding: utf-8
 import numpy
 import cv2
-import matplotlib.pyplot as plt
 
 def kochenize(first_p, second_p, i):
     mu = 0.0
@@ -38,17 +37,19 @@ def koch(depth, width):
     points[-1] = (width/2., numpy.random.uniform(0.0, 0.5*width))
     stepwidth = numlines - 1
 
-    for n in xrange(depth):
-        segment = (numlines-1)/stepwidth
-        for s in xrange(segment):
+    for n in range(depth):
+        segment = int((numlines-1)/stepwidth)
+        for s in range(segment):
             st = s*stepwidth
             a = (points[st][0], points[st][1])
             b = (points[st+stepwidth][0], points[st+stepwidth][1])
-            n1 = st + (stepwidth)/4
-            n2 = st + 2*(stepwidth)/4
-            n3 = st + 3*((stepwidth)/4)
+            n1 = int(st + (stepwidth)/4)
+            n2 = int(st + 2*(stepwidth)/4)
+            n3 = int(st + 3*((stepwidth)/4))
             points[n1], points[n2], points[n3] = kochenize(a,b, depth)
+
         stepwidth /= 4
+        stepwidth = int(stepwidth)
     return points
 
 def random_rotate(img):
@@ -59,7 +60,7 @@ def random_rotate(img):
 
     return img
 
-def random_translate(img):
+def random_translate(img, TOTALWIDTH):
     cols, rows = img.shape
     RandomTranslation = numpy.random.uniform(-TOTALWIDTH / 2, TOTALWIDTH / 2)
     MTrans = numpy.float32([[1, 0, RandomTranslation], [0, 1, RandomTranslation]])
@@ -114,13 +115,12 @@ def construct_matrix(TOTALWIDTH, points):
     return img
 
 def add_alpha_channel(img):
-    print(img.shape)
     # convert grayscale to BGRA
     img = numpy.repeat(img[:, :, numpy.newaxis], 4, axis=2)
 
     return img
 
-if __name__ == '__main__':
+def generate_fractal_cracks():
     TOTALWIDTH = 2048.
     DEPTH = 7
 
@@ -134,14 +134,12 @@ if __name__ == '__main__':
 
     # random rotation and translation
     img = random_rotate(img)
-    img = random_translate(img)
+    img = random_translate(img, TOTALWIDTH)
 
-    Normals = calculate_normals(img)
+    # normal calculation
+    normals = calculate_normals(img)
 
-    plt.figure()
-    plt.imshow(Normals, origin='lower')
-    plt.imsave('normals1.png', Normals)
-
+    # alpha channel addition
     img = add_alpha_channel(img)
-    cv2.imwrite('albedo1.png', img)
-    cv2.imwrite('roughness1.png', img)
+
+    return img, img, normals
