@@ -72,8 +72,8 @@ def calculate_normals(img):
     # make sure to convert image to float otherwise numpy clips gradient to positive values.
     Grad = numpy.gradient(img.astype(float))
     # numpy gradient has y,x indexing
-    GradX = Grad[1]
-    GradY = Grad[0]
+    GradX = Grad[0]
+    GradY = Grad[1]
 
     # usually *-1, but given that we want the normals to point inside the surface it is omitted
     NormX = GradX
