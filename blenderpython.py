@@ -214,14 +214,6 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         generated_maps[0:2] = (generate_fractal_cracks(2048, 7))
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
-
-        for i in range(0, len(generated_maps)-1):
-            # normalize to 0-1 float range!
-            # Don't do this for the normal map as the range is already correct
-            # convert from uint8 to float
-            generated_maps[i] = generated_maps[i].astype(dtype=float)
-            generated_maps[i][:, :, 0:3] = generated_maps[i][:, :, 0:3] / 255
-
         for i in range(0, len(generated_maps)):
             # last shape index is amount of color channels
             if generated_maps[i].shape[-1] != 4:
@@ -251,10 +243,10 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # link crack map images to the above nodes
         bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
         nodes['albedocrack'].image = bpy.data.images['albedo1.png']
-        bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
-        nodes['roughnesscrack'].image = bpy.data.images['roughness1.png']
-        bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
-        nodes['normalcrack'].image = bpy.data.images['normals1.png']
+        #bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
+        #nodes['roughnesscrack'].image = bpy.data.images['roughness1.png']
+        #bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
+        #nodes['normalcrack'].image = bpy.data.images['normals1.png']
 
         # create mix rgb nodes to mix crack maps and original image pbr maps
         nodes.new('ShaderNodeMixRGB')

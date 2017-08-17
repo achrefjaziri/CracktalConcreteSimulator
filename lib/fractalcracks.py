@@ -43,9 +43,9 @@ def koch(depth, width):
             st = s*stepwidth
             a = (points[st][0], points[st][1])
             b = (points[st+stepwidth][0], points[st+stepwidth][1])
-            n1 = int(st + (stepwidth)/4)
-            n2 = int(st + 2*(stepwidth)/4)
-            n3 = int(st + 3*((stepwidth)/4))
+            n1 = st + (stepwidth)//4
+            n2 = st + 2*(stepwidth)//4
+            n3 = st + 3*((stepwidth)//4)
             points[n1], points[n2], points[n3] = kochenize(a,b, depth)
 
         stepwidth /= 4
@@ -69,7 +69,8 @@ def random_translate(img, TOTALWIDTH):
     return img
 
 def calculate_normals(img):
-    Grad = numpy.gradient(img)
+    # make sure to convert image to float otherwise numpy clips gradient to positive values.
+    Grad = numpy.gradient(img.astype(float))
     # numpy gradient has y,x indexing
     GradX = Grad[1]
     GradY = Grad[0]
@@ -93,16 +94,17 @@ def widen_line(img):
     Blur_scales = numpy.array((1, 3, 5))  # need to be odd
     Random_Blur = Blur_scales[numpy.random.randint(0, len(Blur_scales))]
     img = cv2.GaussianBlur(img, (Random_Blur, Random_Blur), 0)
-    # re-normalize the image
+    # re-normalize the image to maximum range
     img = 255 * (img.astype(float) / img.max())
+
     return img
 
 def construct_matrix(TOTALWIDTH, points):
-    max_y = max(points[:, 1])
-    min_x = min(points[:, 0])
-    min_y = min(points[:, 1])
+    max_y = numpy.max(points[:, 1])
+    min_x = numpy.min(points[:, 0])
+    min_y = numpy.min(points[:, 1])
 
-    img = numpy.zeros((int(TOTALWIDTH), int(TOTALWIDTH)), numpy.uint8)
+    img = numpy.zeros((TOTALWIDTH, TOTALWIDTH), numpy.uint8)
 
     pad = (TOTALWIDTH - (max_y - min_y)) / 2
     for pidx, p in enumerate(points[:-1]):
@@ -114,10 +116,14 @@ def construct_matrix(TOTALWIDTH, points):
 
     return img
 
+def invert_matrix(img):
+    img[:,:,0:3] = 1 - img[:,:,0:3]
+    return img
+
 def add_alpha_channel(img):
     # convert grayscale to BGRA
     img = numpy.repeat(img[:, :, numpy.newaxis], 4, axis=2)
-
+    img[:, :, 3] = numpy.ceil(img[:, :, 3])
     return img
 
 def generate_fractal_cracks(TOTALWIDTH, DEPTH):
@@ -126,17 +132,23 @@ def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     # construct a square matrix and fill it with lines between points
     img = construct_matrix(TOTALWIDTH, points)
 
-    # widen the line with a random gaussian blur
-    #img = widen_line(img)
-
     # random rotation and translation
     img = random_rotate(img)
     img = random_translate(img, TOTALWIDTH)
 
+    # widen the line with a random gaussian blur
+    img = widen_line(img)
+
     # normal calculation
     normals = calculate_normals(img)
 
+    # normalize to 0-1 range as blender expects this range for RGBA
+    img = img.astype(dtype=float) / 255.0
+
     # alpha channel addition
     img = add_alpha_channel(img)
+
+    # invert the matrix so the crack is black and the background is white
+    img = invert_matrix(img)
 
     return img, img, normals
