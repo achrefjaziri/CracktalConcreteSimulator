@@ -166,7 +166,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     nodes.new('ShaderNodeMixRGB')
     nodes['Mix'].location = [-300, 750]
     nodes['Mix'].name = 'samplingalbedomix'
-    nodes['samplingalbedomix'].inputs['Fac'].default_value = 1
+    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.9
 
     # links for sampling nodes
     nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'], nodes['samplingalbedorgb'].outputs['Color'])
@@ -211,7 +211,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         #  normals having improper format for blender internals
         generated_maps = []
         # order is: albedo, roughness, normals
-        generated_maps[0:2] = (generate_fractal_cracks(2048, 7))
+        generated_maps[0:2] = (generate_fractal_cracks(4096, 7))
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
         for i in range(0, len(generated_maps)):
@@ -223,9 +223,9 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
                 generated_maps[i] = tmp # copy back
 
         # initialize empty texture structures of corresponding size
-        imgT_albedo = bpy.data.images.new("albedo_image", width=2048, height=2048)
-        imgT_roughness = bpy.data.images.new("roughness_image", width=2048, height=2048)
-        imgT_normals = bpy.data.images.new("normals_image", width=2048, height=2048)
+        imgT_albedo = bpy.data.images.new("albedo_image", width=4096, height=4096)
+        imgT_roughness = bpy.data.images.new("roughness_image", width=4096, height=4096)
+        imgT_normals = bpy.data.images.new("normals_image", width=4096, height=4096)
 
         # flatten the arrays and assign them to the place-holder textures
         imgT_albedo.pixels = generated_maps[0].flatten().tolist()
@@ -241,8 +241,8 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # OLD CODE FOR TESTING PURPOSES
         # currently this is loading textures from pngs
         # link crack map images to the above nodes
-        bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
-        nodes['albedocrack'].image = bpy.data.images['albedo1.png']
+        #bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
+        #nodes['albedocrack'].image = bpy.data.images['albedo1.png']
         #bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
         #nodes['roughnesscrack'].image = bpy.data.images['roughness1.png']
         #bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
@@ -251,6 +251,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # create mix rgb nodes to mix crack maps and original image pbr maps
         nodes.new('ShaderNodeMixRGB')
         nodes['Mix'].name = 'albedomix'
+        #nodes['albedomix'].blend_type = 'SUBTRACT'
         nodes['albedomix'].location = [-400, 450]
         nodes.new('ShaderNodeMixRGB')
         nodes['Mix'].name = 'roughnessmix'
@@ -270,8 +271,8 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # add appropriate factors for scaling mixrgb nodes
         nodetree.links.new(nodes['albedocrack'].outputs['Alpha'], nodes['albedomix'].inputs[0])
         # value for albedomix comes for crack map alpha
-        nodes['roughnessmix'].inputs[0].default_value = 0.5
-        nodes['normalmix'].inputs[0].default_value = 0.5
+        nodes['roughnessmix'].inputs[0].default_value = 0.25
+        nodes['normalmix'].inputs[0].default_value = 0.75
 
         #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
         nodetree.links.new(nodes['albedomix'].outputs['Color'], nodes['basebsdf'].inputs['Color'])
@@ -296,8 +297,8 @@ def render(filepath, frames=1, samples=6):
     bpy.data.scenes['Scene'].frame_end = frames
     bpy.data.scenes['Scene'].render.filepath = filepath
     bpy.data.scenes['Scene'].cycles.samples = samples
-    bpy.data.scenes['Scene'].render.resolution_x = 2048
-    bpy.data.scenes['Scene'].render.resolution_y = 2048
+    bpy.data.scenes['Scene'].render.resolution_x = 4096
+    bpy.data.scenes['Scene'].render.resolution_y = 4096
     bpy.data.scenes['Scene'].render.resolution_percentage = 100
     # before rendering, set the sceen camera to the camera that you created
     bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
@@ -333,7 +334,7 @@ def render(filepath, frames=1, samples=6):
     # copy buffer to numpy array for faster manipulation
     arr = np.array(pixels)
     print(arr.shape)
-    arr = arr.reshape((2048, 2048, 4))
+    arr = arr.reshape((4096, 4096, 4))
     print(arr.shape)
     
     import scipy.misc
@@ -346,8 +347,8 @@ def rendergt(filepath, frames=1, samples=6):
     bpy.data.scenes['Scene'].frame_end = frames
     bpy.data.scenes['Scene'].render.filepath = filepath
     bpy.data.scenes['Scene'].cycles.samples = samples
-    bpy.data.scenes['Scene'].render.resolution_x = 2048
-    bpy.data.scenes['Scene'].render.resolution_y = 2048
+    bpy.data.scenes['Scene'].render.resolution_x = 4096
+    bpy.data.scenes['Scene'].render.resolution_y = 4096
     bpy.data.scenes['Scene'].render.resolution_percentage = 100
     # before rendering, set the sceen camera to the camera that you created
     bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
@@ -370,8 +371,8 @@ def rendernp(filepath, frames=1, samples=6):
     bpy.data.scenes['Scene'].frame_end = frames
     bpy.data.scenes['Scene'].render.filepath = filepath
     bpy.data.scenes['Scene'].cycles.samples = samples
-    bpy.data.scenes['Scene'].render.resolution_x = 2048
-    bpy.data.scenes['Scene'].render.resolution_y = 2048
+    bpy.data.scenes['Scene'].render.resolution_x = 4096
+    bpy.data.scenes['Scene'].render.resolution_y = 4096
     bpy.data.scenes['Scene'].render.resolution_percentage = 100
     # before rendering, set the sceen camera to the camera that you created
     bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
@@ -398,15 +399,16 @@ def sampleandrender(nsamples = 100):
     sval = np.clip(sval, 0, 1)
     vval = np.empty(nsamples, dtype='float64')
     vval.fill(0.529)
+    # location sampling has to be between 0 and 1 because we are using RGB mixer node for translation
     locationx = np.random.uniform(0, 1, size=nsamples)
     locationy = np.random.uniform(0, 1, size=nsamples)
     locationz = np.random.uniform(0, 1, size=nsamples)
-    rotationx = np.random.uniform(0, 20, size=nsamples)
-    rotationy = np.random.uniform(0, 20, size=nsamples)
-    rotationz = np.random.uniform(0, 20, size=nsamples)
-    scalex = np.random.uniform(0.25, 2, size=nsamples)
-    scaley = np.random.uniform(0.25, 2, size=nsamples)
-    scalez = np.random.uniform(0.25, 2, size=nsamples)
+    rotationx = np.random.uniform(0, 15, size=nsamples)
+    rotationy = np.random.uniform(0, 15, size=nsamples)
+    rotationz = np.random.uniform(0, 15, size=nsamples)
+    scalex = np.random.uniform(0.75, 1.25, size=nsamples)
+    scaley = np.random.uniform(0.75, 1.25, size=nsamples)
+    scalez = np.random.uniform(0.75, 1.25, size=nsamples)
     for i in range(nsamples):
         albedoval = [hval[i], sval[i], vval[i]]
         locationval = [locationx[i], locationy[i], locationz[i]]
@@ -422,7 +424,7 @@ def sampleandrender(nsamples = 100):
         mastershader(albedoval, locationval, rotationval, scaleval)
         # render the engine
         #TODO: samples set to 1 for debugging purposes. Please remove
-        render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=1)
+        render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=10)
         # render groundtruth for crack
         if cracked:
             rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=1)

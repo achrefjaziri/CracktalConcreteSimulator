@@ -2,7 +2,7 @@
 # coding: utf-8
 import numpy
 import cv2
-
+from scipy import misc
 def kochenize(first_p, second_p, i):
     mu = 0.0
     sigma = numpy.pi/6.0 #45°
@@ -123,7 +123,6 @@ def invert_matrix(img):
 def add_alpha_channel(img):
     # convert grayscale to BGRA
     img = numpy.repeat(img[:, :, numpy.newaxis], 4, axis=2)
-    img[:, :, 3] = numpy.ceil(img[:, :, 3])
     return img
 
 def generate_fractal_cracks(TOTALWIDTH, DEPTH):
@@ -144,11 +143,12 @@ def generate_fractal_cracks(TOTALWIDTH, DEPTH):
 
     # normalize to 0-1 range as blender expects this range for RGBA
     img = img.astype(dtype=float) / 255.0
-
+    #img = numpy.ceil(img)
     # alpha channel addition
     img = add_alpha_channel(img)
 
     # invert the matrix so the crack is black and the background is white
     img = invert_matrix(img)
-
+    misc.imsave('albedomap.png',img)
+    misc.imsave('normalmap.png',normals)
     return img, img, normals
