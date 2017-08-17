@@ -206,12 +206,10 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         nodes['Image Texture'].name = 'normalcrack' #normal crack
         nodes['normalcrack'].location = [-600, -900]
 
-        # TODO: current code is working, but the result looks less pleasing than before?
-        #  problems are albedo crack being white instead of black
-        #  normals having improper format for blender internals
         generated_maps = []
-        # order is: albedo, roughness, normals
+        # generate crack maps
         generated_maps[0:2] = (generate_fractal_cracks(4096, 7))
+        # order is: albedo, roughness, normals
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
         for i in range(0, len(generated_maps)):
@@ -230,7 +228,6 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # flatten the arrays and assign them to the place-holder textures
         imgT_albedo.pixels = generated_maps[0].flatten().tolist()
         imgT_roughness.pixels = generated_maps[1].flatten().tolist()
-        # TODO: still not sure whether normal maps are in correct format
         imgT_normals.pixels = generated_maps[2].flatten().tolist()
 
         # feed new texture into appropriate nodes
@@ -251,7 +248,6 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         # create mix rgb nodes to mix crack maps and original image pbr maps
         nodes.new('ShaderNodeMixRGB')
         nodes['Mix'].name = 'albedomix'
-        #nodes['albedomix'].blend_type = 'SUBTRACT'
         nodes['albedomix'].location = [-400, 450]
         nodes.new('ShaderNodeMixRGB')
         nodes['Mix'].name = 'roughnessmix'
@@ -276,7 +272,6 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
 
         #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
         nodetree.links.new(nodes['albedomix'].outputs['Color'], nodes['basebsdf'].inputs['Color'])
-        #nodetree.links.new(nodes['albedomix'].outputs['Color'], nodes['specbsdf'].inputs['Color'])
         nodetree.links.new(nodes['roughnessmix'].outputs['Color'], nodes['specbsdf'].inputs['Roughness'])
         nodetree.links.new(nodes['normalmix'].outputs['Color'], nodes['Material Output'].inputs['Displacement'])
         nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'], nodes['albedomix'].inputs['Color1'])
