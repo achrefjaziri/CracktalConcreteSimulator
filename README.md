@@ -8,15 +8,6 @@ Options to run it
 1.  Ensure you are inside blenderpython folder in commandline by using cd command. Type in command line:  blender default.blend --background --python blenderpython.py 
 2. Open blender. Open text editor. Load blenderpython.py. Open pythonconsole. Use os.chdir and change directory to blenderpython folder. Run blenderpython.py from text editor.
 
-## Details regarding the code implementation
-
-The code is fully commented. In order to run, you need pbr maps from freepbr website and update the code with the correct location for albedo, roughness and normal maps. The code will not work if you run some other rendering and you try to run this script from text editor of blender afterwards. It is built on the basic blender scene with predefined cube,lamp and camera. It removes the cube along with material and mesh. The command given above for the command line will work.
-
-Blender version used: 2.78c
-
-Free pbr website: https://freepbr.com/ (Working: Last checked 11/08/2017)
-
-
 ## Installing external modules
 
 To install external python packages like scipy do the following:

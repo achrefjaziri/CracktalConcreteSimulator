@@ -5,6 +5,14 @@ import sys
 import numpy as np
 import colorsys
 
+# Find out if system has GPU and if it has at least one GPU, it is going to be set
+# Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
+# this behavior you can modify the GPUs index to "use=False": 
+# bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
+if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) > 0:
+    bpy.context.scene.cycles.device = 'GPU'
+
+
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
     sys.path.append(dir)
@@ -298,6 +306,10 @@ def render(filepath, frames=1, samples=6):
     # before rendering, set the sceen camera to the camera that you created
     bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
 
+    #set render tile sizes
+    bpy.data.scenes['Scene'].render.tile_x = 256
+    bpy.data.scenes['Scene'].render.tile_y = 256
+ 
     '''
     # Commented code can later potentially be used to get the result directly from the CompositorLayer 
     # and pipe convert and reshape it into a numpy array
