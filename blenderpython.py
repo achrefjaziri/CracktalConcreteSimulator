@@ -291,6 +291,18 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     bpy.ops.object.mode_set(mode='OBJECT')
     
 def render(path, f, s):
+    bpy.data.scenes['Scene'].frame_end = f
+    bpy.data.scenes['Scene'].render.filepath = path
+    bpy.data.scenes['Scene'].cycles.samples = s
+    bpy.data.scenes['Scene'].render.resolution_x = 4096
+    bpy.data.scenes['Scene'].render.resolution_y = 4096
+    bpy.data.scenes['Scene'].render.resolution_percentage = 100
+    # before rendering, set the sceen camera to the camera that you created
+    bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
+
+    #set render tile sizes
+    bpy.data.scenes['Scene'].render.tile_x = 256
+    bpy.data.scenes['Scene'].render.tile_y = 256
 
     render_img(filepath=path, frames=f, samples=s)
     # render groundtruth for crack
@@ -301,19 +313,6 @@ def render(path, f, s):
     rendernp(filepath=path, frames=f, samples=s)
 
 def render_img(filepath, frames, samples):
-    bpy.data.scenes['Scene'].frame_end = frames
-    bpy.data.scenes['Scene'].render.filepath = filepath
-    bpy.data.scenes['Scene'].cycles.samples = samples
-    bpy.data.scenes['Scene'].render.resolution_x = 4096
-    bpy.data.scenes['Scene'].render.resolution_y = 4096
-    bpy.data.scenes['Scene'].render.resolution_percentage = 100
-    # before rendering, set the sceen camera to the camera that you created
-    bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
-
-    #set render tile sizes
-    bpy.data.scenes['Scene'].render.tile_x = 256
-    bpy.data.scenes['Scene'].render.tile_y = 256
- 
     # Commented code can later potentially be used to get the result directly from the CompositorLayer 
     # in principle this works fine, however it needs a GUI to work....
     # and pipe convert and reshape it into a numpy array
@@ -368,15 +367,6 @@ def render_img(filepath, frames, samples):
 
 
 def rendergt(filepath, frames, samples):
-    bpy.data.scenes['Scene'].frame_end = frames
-    bpy.data.scenes['Scene'].render.filepath = filepath
-    bpy.data.scenes['Scene'].cycles.samples = samples
-    bpy.data.scenes['Scene'].render.resolution_x = 4096
-    bpy.data.scenes['Scene'].render.resolution_y = 4096
-    bpy.data.scenes['Scene'].render.resolution_percentage = 100
-    # before rendering, set the sceen camera to the camera that you created
-    bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
-
     nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
     nodes = bpy.data.materials['concrete'].node_tree.nodes
     nodes.new('ShaderNodeEmission')
@@ -394,15 +384,6 @@ def rendergt(filepath, frames, samples):
 
 
 def rendernp(filepath, frames, samples):
-    bpy.data.scenes['Scene'].frame_end = frames
-    bpy.data.scenes['Scene'].render.filepath = filepath
-    bpy.data.scenes['Scene'].cycles.samples = samples
-    bpy.data.scenes['Scene'].render.resolution_x = 4096
-    bpy.data.scenes['Scene'].render.resolution_y = 4096
-    bpy.data.scenes['Scene'].render.resolution_percentage = 100
-    # before rendering, set the sceen camera to the camera that you created
-    bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
-
     nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
     nodes = bpy.data.materials['concrete'].node_tree.nodes
     if cracked:
