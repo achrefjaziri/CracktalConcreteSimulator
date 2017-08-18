@@ -4,6 +4,7 @@ import os
 import sys
 import numpy as np
 import colorsys
+from scipy import misc
 
 # Find out if system has GPU and if it has at least one GPU, it is going to be set
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
@@ -11,7 +12,6 @@ import colorsys
 # bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
 if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) > 0:
     bpy.context.scene.cycles.device = 'GPU'
-
 
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
@@ -22,7 +22,12 @@ from lib.fractalcracks import generate_fractal_cracks
 
 # Change this later into either properly sampled parameters or an argument parser
 cracked = True
+batchsize = 2 #will be something less than 6 GB 
 
+# Three place-holder lists for rendered image, normal map and ground-truth
+result_imgs = []
+result_normals = []
+result_gt = []
 
 def removeexistingobjects():
     check = bpy.data.objects is not None
@@ -146,11 +151,11 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     nodes['normalconcrete'].location = [-600, -600]
 
     #link images to imagetexture node
-    bpy.ops.image.open(filepath='testimagesblender/concretemaps/albedo.png') #first open image to link
+    bpy.ops.image.open(filepath='concretemaps/albedo.png') #first open image to link
     nodes['albedoconcrete'].image = bpy.data.images['albedo.png']
-    bpy.ops.image.open(filepath='testimagesblender/concretemaps/roughness.png')
+    bpy.ops.image.open(filepath='concretemaps/roughness.png')
     nodes['roughnessconcrete'].image = bpy.data.images['roughness.png']
-    bpy.ops.image.open(filepath='testimagesblender/concretemaps/normal.png')
+    bpy.ops.image.open(filepath='concretemaps/normal.png')
     nodes['normalconcrete'].image = bpy.data.images['normal.png']
 
     # random albedo and other map rgb and mix nodes for random sampling
@@ -243,16 +248,6 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
         nodes['roughnesscrack'].image = imgT_roughness
         nodes['normalcrack'].image = imgT_normals
 
-        # OLD CODE FOR TESTING PURPOSES
-        # currently this is loading textures from pngs
-        # link crack map images to the above nodes
-        #bpy.ops.image.open(filepath='testimagesblender/crackmaps/albedo1.png')
-        #nodes['albedocrack'].image = bpy.data.images['albedo1.png']
-        #bpy.ops.image.open(filepath='testimagesblender/crackmaps/roughness1.png')
-        #nodes['roughnesscrack'].image = bpy.data.images['roughness1.png']
-        #bpy.ops.image.open(filepath='testimagesblender/crackmaps/normals1.png')
-        #nodes['normalcrack'].image = bpy.data.images['normals1.png']
-
         # create mix rgb nodes to mix crack maps and original image pbr maps
         nodes.new('ShaderNodeMixRGB')
         nodes['Mix'].name = 'albedomix'
@@ -295,8 +290,17 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
     
-    
-def render(filepath, frames=1, samples=6):
+def render(path, f, s):
+
+    render_img(filepath=path, frames=f, samples=s)
+    # render groundtruth for crack
+    if cracked:
+        rendergt(filepath=path, frames=f, samples=s)
+
+    # render normalmap
+    rendernp(filepath=path, frames=f, samples=s)
+
+def render_img(filepath, frames, samples):
     bpy.data.scenes['Scene'].frame_end = frames
     bpy.data.scenes['Scene'].render.filepath = filepath
     bpy.data.scenes['Scene'].cycles.samples = samples
@@ -310,10 +314,11 @@ def render(filepath, frames=1, samples=6):
     bpy.data.scenes['Scene'].render.tile_x = 256
     bpy.data.scenes['Scene'].render.tile_y = 256
  
-    '''
     # Commented code can later potentially be used to get the result directly from the CompositorLayer 
+    # in principle this works fine, however it needs a GUI to work....
     # and pipe convert and reshape it into a numpy array
     # switch on nodes
+    '''
     bpy.context.scene.use_nodes = True
     tree = bpy.context.scene.node_tree
     links = tree.links
@@ -324,33 +329,45 @@ def render(filepath, frames=1, samples=6):
     
     # create output node
     v = tree.nodes.new('CompositorNodeViewer')
+    v.name = 'ImageViewerNode'
     v.location = 750, 210
     v.use_alpha = False
+
+    # create another output node for surface normals
+    n = tree.nodes.new('CompositorNodeViewer')
+    n.location = 750, 390
+    n.use_alpha = False
     
+    # for the normals
+    bpy.data.scenes['Scene'].render.layers["RenderLayer"].use_pass_normal = True
+
     # Links
     links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input
+    links.new(rl.outputs['Normal'], n.inputs[0])  # link Normal output to Viewer input
     '''
-
     bpy.ops.render.render(write_still=True)
+    # as it seems impossible to access rendered image directly due to some blender internal
+    # buffer freeing issues, we save the result to a tmp image and load it again.
+    result_imgs.append(misc.imread(filepath))
 
     '''
     # get viewer pixels
-    pixels = bpy.data.images['Viewer Node'].pixels
-    print(len(pixels))  # size is always width * height * 4 (rgba)
-    
+    img_pixels = bpy.data.images['Viewer Node'].pixels
+    normal_pixels = bpy.data.images['Viewer Node'].pixels
+
     # copy buffer to numpy array for faster manipulation
-    arr = np.array(pixels)
-    print(arr.shape)
+    # size is always width * height * 4 (rgba)
+    arr = np.array(img_pixels)
     arr = arr.reshape((4096, 4096, 4))
-    print(arr.shape)
-    
-    import scipy.misc
-    
-    scipy.misc.imsave('outputfile.png', arr)
+    misc.imsave('outputfile.png', arr)
+
+    arr = np.array(normal_pixels)
+    arr = arr.reshape((4096, 4096, 4))
+    misc.imsave('normaloutputfile.png', arr)
     '''
 
 
-def rendergt(filepath, frames=1, samples=6):
+def rendergt(filepath, frames, samples):
     bpy.data.scenes['Scene'].frame_end = frames
     bpy.data.scenes['Scene'].render.filepath = filepath
     bpy.data.scenes['Scene'].cycles.samples = samples
@@ -373,8 +390,10 @@ def rendergt(filepath, frames=1, samples=6):
         nodetree.links.remove(l)
     bpy.ops.render.render(write_still=True)
 
+    result_gt.append(misc.imread(filepath))
 
-def rendernp(filepath, frames=1, samples=6):
+
+def rendernp(filepath, frames, samples):
     bpy.data.scenes['Scene'].frame_end = frames
     bpy.data.scenes['Scene'].render.filepath = filepath
     bpy.data.scenes['Scene'].cycles.samples = samples
@@ -398,25 +417,27 @@ def rendernp(filepath, frames=1, samples=6):
             nodetree.links.remove(l)
     bpy.ops.render.render(write_still=True)
 
+    result_normals.append(misc.imread(filepath))
 
-def sampleandrender(nsamples = 100):
-    hval = np.random.normal(0.5, 0.3, size=nsamples)
-    sval = np.random.normal(0.5, 0.3, size=nsamples)
+
+def sampleandrender(num_images = 100, path='tmp/tmp.png', f=1, s=1):
+    hval = np.random.normal(0.5, 0.3, size=num_images)
+    sval = np.random.normal(0.5, 0.3, size=num_images)
     hval = np.clip(hval, 0, 1)
     sval = np.clip(sval, 0, 1)
-    vval = np.empty(nsamples, dtype='float64')
+    vval = np.empty(num_images, dtype='float64')
     vval.fill(0.529)
     # location sampling has to be between 0 and 1 because we are using RGB mixer node for translation
-    locationx = np.random.uniform(0, 1, size=nsamples)
-    locationy = np.random.uniform(0, 1, size=nsamples)
-    locationz = np.random.uniform(0, 1, size=nsamples)
-    rotationx = np.random.uniform(0, 15, size=nsamples)
-    rotationy = np.random.uniform(0, 15, size=nsamples)
-    rotationz = np.random.uniform(0, 15, size=nsamples)
-    scalex = np.random.uniform(0.75, 1.25, size=nsamples)
-    scaley = np.random.uniform(0.75, 1.25, size=nsamples)
-    scalez = np.random.uniform(0.75, 1.25, size=nsamples)
-    for i in range(nsamples):
+    locationx = np.random.uniform(0, 1, size=num_images)
+    locationy = np.random.uniform(0, 1, size=num_images)
+    locationz = np.random.uniform(0, 1, size=num_images)
+    rotationx = np.random.uniform(0, 15, size=num_images)
+    rotationy = np.random.uniform(0, 15, size=num_images)
+    rotationz = np.random.uniform(0, 15, size=num_images)
+    scalex = np.random.uniform(0.75, 1.25, size=num_images)
+    scaley = np.random.uniform(0.75, 1.25, size=num_images)
+    scalez = np.random.uniform(0.75, 1.25, size=num_images)
+    for i in range(num_images):
         albedoval = [hval[i], sval[i], vval[i]]
         locationval = [locationx[i], locationy[i], locationz[i]]
         rotationval = [rotationx[i], rotationy[i], rotationz[i]]
@@ -430,15 +451,17 @@ def sampleandrender(nsamples = 100):
         # master shader for material with mesh
         mastershader(albedoval, locationval, rotationval, scaleval)
         # render the engine
-        #TODO: samples set to 1 for debugging purposes. Please remove
-        render(filepath=os.path.join('testimagesblender/results/out'+str(i)+'.png'), frames=1, samples=10)
-        # render groundtruth for crack
-        if cracked:
-            rendergt(filepath=os.path.join('testimagesblender/groundtruth/gt'+str(i)+'.png'), frames=1, samples=1)
-        # render normalmap
-            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np'+str(i)+'.png'), frames=1, samples=1)
-        else:
-            rendernp(filepath=os.path.join('testimagesblender/normalmaps/np' + str(i) + '.png'), frames=1, samples=1)
+        render(path, f, s)
+
+        # pass the data to whatever function you want
+
+        #TODO: write optional save to disc function with FLAG that gets set
+
+        # clear the lists of stored results
+        if i % batchsize == 0: 
+            del result_imgs[:]
+            del result_normals[:]
+            del result_gt[:]
 
 
 if __name__ == "__main__": 
@@ -449,5 +472,6 @@ if __name__ == "__main__":
     checkmode = bpy.context.active_object.mode
     if checkmode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
-    # if you are running from blender text editor uncomment below line and link blenderpython folder properly here
-    sampleandrender(nsamples=1)
+
+    #TODO: samples set to 1 for debugging purposes. Please remove
+    sampleandrender(num_images=20, path='tmp/tmp.png', f=1, s=10)
