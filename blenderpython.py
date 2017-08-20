@@ -26,7 +26,7 @@ crack = [0,1]
 batchsize = 2 #will be something less than 6 GB 
 
 # if you wish to save images in a folder set this flag to true
-saveimages = True
+saveimages = False
 
 
 # Three place-holder lists for rendered image, normal map and ground-truth
@@ -38,7 +38,7 @@ result_gt = []
 concretemaps = [1,2] #currently we have 2 maps for concrete albedo, roughness and normal.
 
 # default image resolution to render
-resolution = 2048
+resolution = 4096
 # if directory not found download from online for concrete maps
 if os.path.isdir("concretedictionary"):
     print ("\n Concrete dictionary maps folder found")
@@ -486,4 +486,4 @@ if __name__ == "__main__":
         bpy.ops.object.mode_set(mode='OBJECT')
 
     # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
-    sampleandrender(num_images=8, path='tmp/tmp.png', f=1, s=1)
+    sampleandrender(num_images=10, path='tmp/tmp.png', f=1, s=10)
