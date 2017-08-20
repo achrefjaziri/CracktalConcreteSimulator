@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import colorsys
 from scipy import misc
-
+import random
 # Find out if system has GPU and if it has at least one GPU, it is going to be set
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
 # this behavior you can modify the GPUs index to "use=False": 
@@ -20,14 +20,32 @@ if not dir in sys.path:
 # import custom scripts for map generation
 from lib.fractalcracks import generate_fractal_cracks
 
-# Change this later into either properly sampled parameters or an argument parser
-cracked = True
+# Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
+crack = [0,1]
+
 batchsize = 2 #will be something less than 6 GB 
+
+# if you wish to save images in a folder set this flag to true
+saveimages = True
+
 
 # Three place-holder lists for rendered image, normal map and ground-truth
 result_imgs = []
 result_normals = []
 result_gt = []
+
+# concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
+concretemaps = [1,2] #currently we have 2 maps for concrete albedo, roughness and normal.
+
+# default image resolution to render
+resolution = 2048
+# if directory not found download from online for concrete maps
+if os.path.isdir("concretedictionary"):
+    print ("\n Concrete dictionary maps folder found")
+else:
+    flagres1 = os.system('wget -O concretedictionary.zip "https://drive.google.com/uc?export=download&id=0B81H1jpchFZQNjhSTjBzUUItbEU"')
+    flagres2 = os.system('unzip concretedictionary.zip')
+    flagres3 = os.system('rm concretedictionary.zip')
 
 def removeexistingobjects():
     check = bpy.data.objects is not None
@@ -94,7 +112,7 @@ def lightsource():
     bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
 
 
-def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0, 0, 0],scaleval=[1, 1, 1]):
+def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1, cracked=1):
     # add a base primitive mesh. in this case a plane mesh is added at origin
     bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
     # default object name is 'Plane'. or index 2 in this case
@@ -151,12 +169,12 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     nodes['normalconcrete'].location = [-600, -600]
 
     #link images to imagetexture node
-    bpy.ops.image.open(filepath='concretemaps/albedo.png') #first open image to link
-    nodes['albedoconcrete'].image = bpy.data.images['albedo.png']
-    bpy.ops.image.open(filepath='concretemaps/roughness.png')
-    nodes['roughnessconcrete'].image = bpy.data.images['roughness.png']
-    bpy.ops.image.open(filepath='concretemaps/normal.png')
-    nodes['normalconcrete'].image = bpy.data.images['normal.png']
+    bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete'+str(concrete)+'/albedo'+str(concrete)+'.png')) #first open image to link
+    nodes['albedoconcrete'].image = bpy.data.images[os.path.join('albedo'+str(concrete)+'.png')]
+    bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png'))
+    nodes['roughnessconcrete'].image = bpy.data.images[os.path.join('roughness' + str(concrete) + '.png')]
+    bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png'))
+    nodes['normalconcrete'].image = bpy.data.images[os.path.join('normal' + str(concrete) + '.png')]
 
     # random albedo and other map rgb and mix nodes for random sampling
     nodes.new('ShaderNodeRGB')
@@ -179,7 +197,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     nodes.new('ShaderNodeMixRGB')
     nodes['Mix'].location = [-300, 750]
     nodes['Mix'].name = 'samplingalbedomix'
-    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.9
+    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.85
 
     # links for sampling nodes
     nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'], nodes['samplingalbedorgb'].outputs['Color'])
@@ -221,7 +239,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
 
         generated_maps = []
         # generate crack maps
-        generated_maps[0:2] = (generate_fractal_cracks(4096, 7))
+        generated_maps[0:2] = (generate_fractal_cracks(resolution, 7))
         # order is: albedo, roughness, normals
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
@@ -234,9 +252,9 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
                 generated_maps[i] = tmp # copy back
 
         # initialize empty texture structures of corresponding size
-        imgT_albedo = bpy.data.images.new("albedo_image", width=4096, height=4096)
-        imgT_roughness = bpy.data.images.new("roughness_image", width=4096, height=4096)
-        imgT_normals = bpy.data.images.new("normals_image", width=4096, height=4096)
+        imgT_albedo = bpy.data.images.new("albedo_image", width=resolution, height=resolution)
+        imgT_roughness = bpy.data.images.new("roughness_image", width=resolution, height=resolution)
+        imgT_normals = bpy.data.images.new("normals_image", width=resolution, height=resolution)
 
         # flatten the arrays and assign them to the place-holder textures
         imgT_albedo.pixels = generated_maps[0].flatten().tolist()
@@ -290,12 +308,12 @@ def mastershader(albedoval=[0.5, 0.5, 0.5],locationval=[0, 0, 0],rotationval=[0,
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
     
-def render(path, f, s):
+def render(path, f, s, cracked):
     bpy.data.scenes['Scene'].frame_end = f
     bpy.data.scenes['Scene'].render.filepath = path
     bpy.data.scenes['Scene'].cycles.samples = s
-    bpy.data.scenes['Scene'].render.resolution_x = 4096
-    bpy.data.scenes['Scene'].render.resolution_y = 4096
+    bpy.data.scenes['Scene'].render.resolution_x = resolution
+    bpy.data.scenes['Scene'].render.resolution_y = resolution
     bpy.data.scenes['Scene'].render.resolution_percentage = 100
     # before rendering, set the sceen camera to the camera that you created
     bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
@@ -305,12 +323,13 @@ def render(path, f, s):
     bpy.data.scenes['Scene'].render.tile_y = 256
 
     render_img(filepath=path, frames=f, samples=s)
-    # render groundtruth for crack
-    if cracked:
-        rendergt(filepath=path, frames=f, samples=s)
+    # render groundtruth
+    rendergt(filepath=path, frames=f, samples=s, crackflag=cracked)
 
     # render normalmap
-    rendernp(filepath=path, frames=f, samples=s)
+    rendernp(filepath=path, frames=f, samples=s, crackflag=cracked)
+
+
 
 def render_img(filepath, frames, samples):
     # Commented code can later potentially be used to get the result directly from the CompositorLayer 
@@ -357,36 +376,39 @@ def render_img(filepath, frames, samples):
     # copy buffer to numpy array for faster manipulation
     # size is always width * height * 4 (rgba)
     arr = np.array(img_pixels)
-    arr = arr.reshape((4096, 4096, 4))
+    arr = arr.reshape((resolution, resolution, 4))
     misc.imsave('outputfile.png', arr)
 
     arr = np.array(normal_pixels)
-    arr = arr.reshape((4096, 4096, 4))
+    arr = arr.reshape((resolution, resolution, 4))
     misc.imsave('normaloutputfile.png', arr)
     '''
 
 
-def rendergt(filepath, frames, samples):
+def rendergt(filepath, frames, samples, crackflag):
+    if crackflag:
+        nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
+        nodes = bpy.data.materials['concrete'].node_tree.nodes
+        nodes.new('ShaderNodeEmission')
+        nodes['Emission'].name = 'emit1'
+        nodes['emit1'].location = [450, -100]
+        nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['albedocrack'].outputs['Color'])
+        nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
+
+        # remove displacement links
+        for l in nodes['Material Output'].inputs['Displacement'].links:
+            nodetree.links.remove(l)
+        bpy.ops.render.render(write_still=True)
+
+        result_gt.append(misc.imread(filepath))
+    else:
+        gtimage = np.zeros((resolution, resolution, 3))
+        result_gt.append(gtimage)
+
+def rendernp(filepath, frames, samples, crackflag):
     nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
     nodes = bpy.data.materials['concrete'].node_tree.nodes
-    nodes.new('ShaderNodeEmission')
-    nodes['Emission'].name = 'emit1'
-    nodes['emit1'].location = [450, -100]
-    nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['albedocrack'].outputs['Color'])
-    nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
-
-    # remove displacement links
-    for l in nodes['Material Output'].inputs['Displacement'].links:
-        nodetree.links.remove(l)
-    bpy.ops.render.render(write_still=True)
-
-    result_gt.append(misc.imread(filepath))
-
-
-def rendernp(filepath, frames, samples):
-    nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
-    nodes = bpy.data.materials['concrete'].node_tree.nodes
-    if cracked:
+    if crackflag:
         nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalmix'].outputs['Color'])
     else:
         nodes.new('ShaderNodeEmission')
@@ -423,6 +445,10 @@ def sampleandrender(num_images = 100, path='tmp/tmp.png', f=1, s=1):
         locationval = [locationx[i], locationy[i], locationz[i]]
         rotationval = [rotationx[i], rotationy[i], rotationz[i]]
         scaleval = [scalex[i], scaley[i], scalez[i]]
+        # randomly choose crack or noncrack structure
+        cracked = random.choice(crack)
+        # randomly choose which concrete mapset to use
+        concrete = random.choice(concretemaps)
         # remove existing objects present in the scene
         removeexistingobjects()
         # modify existing camera
@@ -430,13 +456,18 @@ def sampleandrender(num_images = 100, path='tmp/tmp.png', f=1, s=1):
         # modify existing light source
         lightsource()
         # master shader for material with mesh
-        mastershader(albedoval, locationval, rotationval, scaleval)
+        mastershader(albedoval, locationval, rotationval, scaleval, concrete, cracked)
         # render the engine
-        render(path, f, s)
+        render(path, f, s, cracked)
 
-        # pass the data to whatever function you want
-
-        #TODO: write optional save to disc function with FLAG that gets set
+        # save images to temporary folder if required for viewing later on
+        if saveimages:
+            res_string = os.path.join('tmp/render'+str(i)+'.png')
+            gt_string = os.path.join('tmp/gt' + str(i) + '.png')
+            normal_string = os.path.join('tmp/normal' + str(i) + '.png')
+            misc.imsave(res_string,result_imgs[len(result_imgs)-1])
+            misc.imsave(normal_string, result_normals[len(result_imgs) - 1])
+            misc.imsave(gt_string, result_gt[len(result_imgs) - 1])
 
         # clear the lists of stored results
         if i % batchsize == 0: 
@@ -454,5 +485,5 @@ if __name__ == "__main__":
     if checkmode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
 
-    #TODO: samples set to 1 for debugging purposes. Please remove
-    sampleandrender(num_images=20, path='tmp/tmp.png', f=1, s=10)
+    # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
+    sampleandrender(num_images=8, path='tmp/tmp.png', f=1, s=1)
