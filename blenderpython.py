@@ -6,6 +6,7 @@ import numpy as np
 import colorsys
 from scipy import misc
 import random
+
 # Find out if system has GPU and if it has at least one GPU, it is going to be set
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
 # this behavior you can modify the GPUs index to "use=False": 
@@ -19,15 +20,16 @@ if not dir in sys.path:
 
 # import custom scripts for map generation
 from lib.fractalcracks import generate_fractal_cracks
+from lib.cmdparser import parse
+
+# parse command line arguments
+args = parse(sys.argv)
+print("Command line options:")
+for arg in vars(args):
+    print(arg, getattr(args, arg))
 
 # Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
 crack = [0,1]
-
-batchsize = 2 #will be something less than 6 GB 
-
-# if you wish to save images in a folder set this flag to true
-saveimages = True
-
 
 # Three place-holder lists for rendered image, normal map and ground-truth
 result_imgs = []
@@ -37,8 +39,6 @@ result_gt = []
 # concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
 concretemaps = [1,2] #currently we have 2 maps for concrete albedo, roughness and normal.
 
-# default image resolution to render
-resolution = 4096
 # if directory not found download from online for concrete maps
 if os.path.isdir("concretedictionary"):
     print ("\n Concrete dictionary maps folder found")
@@ -239,7 +239,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
 
         generated_maps = []
         # generate crack maps
-        generated_maps[0:2] = (generate_fractal_cracks(resolution, 7))
+        generated_maps[0:2] = (generate_fractal_cracks(args.resolution, 7))
         # order is: albedo, roughness, normals
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
@@ -252,9 +252,9 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
                 generated_maps[i] = tmp # copy back
 
         # initialize empty texture structures of corresponding size
-        imgT_albedo = bpy.data.images.new("albedo_image", width=resolution, height=resolution)
-        imgT_roughness = bpy.data.images.new("roughness_image", width=resolution, height=resolution)
-        imgT_normals = bpy.data.images.new("normals_image", width=resolution, height=resolution)
+        imgT_albedo = bpy.data.images.new("albedo_image", width=args.resolution, height=args.resolution)
+        imgT_roughness = bpy.data.images.new("roughness_image", width=args.resolution, height=args.resolution)
+        imgT_normals = bpy.data.images.new("normals_image", width=args.resolution, height=args.resolution)
 
         # flatten the arrays and assign them to the place-holder textures
         imgT_albedo.pixels = generated_maps[0].flatten().tolist()
@@ -312,15 +312,15 @@ def render(path, f, s, cracked):
     bpy.data.scenes['Scene'].frame_end = f
     bpy.data.scenes['Scene'].render.filepath = path
     bpy.data.scenes['Scene'].cycles.samples = s
-    bpy.data.scenes['Scene'].render.resolution_x = resolution
-    bpy.data.scenes['Scene'].render.resolution_y = resolution
+    bpy.data.scenes['Scene'].render.resolution_x = args.resolution
+    bpy.data.scenes['Scene'].render.resolution_y = args.resolution
     bpy.data.scenes['Scene'].render.resolution_percentage = 100
     # before rendering, set the sceen camera to the camera that you created
     bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
 
     #set render tile sizes
-    bpy.data.scenes['Scene'].render.tile_x = 256
-    bpy.data.scenes['Scene'].render.tile_y = 256
+    bpy.data.scenes['Scene'].render.tile_x = args.tile_size
+    bpy.data.scenes['Scene'].render.tile_y = args.tile_size
 
     render_img(filepath=path, frames=f, samples=s)
     # render groundtruth
@@ -406,7 +406,7 @@ def rendergt(filepath, frames, samples, crackflag):
         misc.imsave(filepath, gt)
         result_gt.append(gt)
     else:
-        gtimage = np.zeros((resolution, resolution, 3))
+        gtimage = np.zeros((args.resolution, args.resolution, 3))
         result_gt.append(gtimage)
 
 def rendernp(filepath, frames, samples, crackflag):
@@ -427,7 +427,7 @@ def rendernp(filepath, frames, samples, crackflag):
     result_normals.append(misc.imread(filepath))
 
 
-def sampleandrender(num_images = 100, path='tmp/tmp.png', f=1, s=1):
+def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
     hval = np.random.normal(0.5, 0.3, size=num_images)
     sval = np.random.normal(0.5, 0.3, size=num_images)
     hval = np.clip(hval, 0, 1)
@@ -465,7 +465,7 @@ def sampleandrender(num_images = 100, path='tmp/tmp.png', f=1, s=1):
         render(path, f, s, cracked)
 
         # save images to temporary folder if required for viewing later on
-        if saveimages:
+        if args.save_images:
             res_string = os.path.join('tmp/render'+str(i)+'.png')
             gt_string = os.path.join('tmp/gt' + str(i) + '.png')
             normal_string = os.path.join('tmp/normal' + str(i) + '.png')
@@ -474,7 +474,7 @@ def sampleandrender(num_images = 100, path='tmp/tmp.png', f=1, s=1):
             misc.imsave(gt_string, result_gt[len(result_imgs) - 1])
 
         # clear the lists of stored results
-        if i % batchsize == 0: 
+        if i % args.batch_size == 0:
             del result_imgs[:]
             del result_normals[:]
             del result_gt[:]
@@ -490,4 +490,4 @@ if __name__ == "__main__":
         bpy.ops.object.mode_set(mode='OBJECT')
 
     # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
-    sampleandrender(num_images=10, path='tmp/tmp.png', f=1, s=1)
+    sampleandrender(args.num_images, args.samples, path='tmp/tmp.png', f=1)
