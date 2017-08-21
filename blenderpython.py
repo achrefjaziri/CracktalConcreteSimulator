@@ -11,8 +11,12 @@ import random
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
 # this behavior you can modify the GPUs index to "use=False": 
 # bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
+
+#Use flag for deep learning to know whether system has a GPU
+UseGPU = False
 if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) > 0:
     bpy.context.scene.cycles.device = 'GPU'
+    UseGPU = True
 
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
@@ -41,11 +45,40 @@ concretemaps = [1,2] #currently we have 2 maps for concrete albedo, roughness an
 
 # if directory not found download from online for concrete maps
 if os.path.isdir("concretedictionary"):
-    print ("\n Concrete dictionary maps folder found")
+    print ("Concrete dictionary maps folder found")
 else:
     flagres1 = os.system('wget -O concretedictionary.zip "https://drive.google.com/uc?export=download&id=0B81H1jpchFZQNjhSTjBzUUItbEU"')
     flagres2 = os.system('unzip concretedictionary.zip')
     flagres3 = os.system('rm concretedictionary.zip')
+
+# only initialize a deep network if the save option to generate
+# TODO: Deepnet stuff desperately needs a refactor
+if args.deep_learning:
+    import torch
+    import torch.nn.parallel
+    import torch.backends.cudnn as cudnn
+    import lib.deep_architectures
+    from lib.train import train, validate
+
+    # create deep network model
+    net_init_method = getattr(lib.deep_architectures, args.architecture)
+    model = net_init_method()
+    if UseGPU:
+        model = torch.nn.DataParallel(model).cuda()
+
+    print("Neural Network architecture: \n", model)
+    # CUDNN
+    cudnn.benchmark = True
+
+    if UseGPU:
+        criterion = torch.nn.MSELoss().cuda()
+    else:
+        criterion = torch.nn.MSELoss()
+
+    optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
+                                momentum=args.momentum,
+                                weight_decay=args.weight_decay)
+
 
 def removeexistingobjects():
     check = bpy.data.objects is not None
@@ -307,7 +340,8 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
     bpy.ops.uv.unwrap()
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
-    
+
+
 def render(path, f, s, cracked):
     bpy.data.scenes['Scene'].frame_end = f
     bpy.data.scenes['Scene'].render.filepath = path
@@ -325,10 +359,8 @@ def render(path, f, s, cracked):
     render_img(filepath=path, frames=f, samples=s)
     # render groundtruth
     rendergt(filepath=path, frames=f, samples=s, crackflag=cracked)
-
     # render normalmap
     rendernp(filepath=path, frames=f, samples=s, crackflag=cracked)
-
 
 
 def render_img(filepath, frames, samples):
@@ -363,10 +395,16 @@ def render_img(filepath, frames, samples):
     links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input
     links.new(rl.outputs['Normal'], n.inputs[0])  # link Normal output to Viewer input
     '''
+
     bpy.ops.render.render(write_still=True)
     # as it seems impossible to access rendered image directly due to some blender internal
     # buffer freeing issues, we save the result to a tmp image and load it again.
-    result_imgs.append(misc.imread(filepath))
+    res = misc.imread(filepath)
+    # if used for deep learning, down-sample and exclude alpha channel before feeding into list
+    if args.deep_learning:
+        res = misc.imresize(res, size=(args.patch_size,args.patch_size),  interp='nearest').astype(float)/255 #imresize automatically converts to uint8
+        res = res[:,:,0:3]
+    result_imgs.append(res)
 
     '''
     # get viewer pixels
@@ -404,10 +442,19 @@ def rendergt(filepath, frames, samples, crackflag):
         gt = gt > 0
         gt = gt.astype(int)
         misc.imsave(filepath, gt)
+
+        # if used for deep learning, down-sample and exclude alpha channel before feeding into list
+        if args.deep_learning:
+            gt = misc.imread(filepath)
+            gt = misc.imresize(gt, size=(args.patch_size, args.patch_size),  interp='nearest').astype(float) / 255  # imresize automatically converts to uint8
+            gt = gt[:, :, 0:3]
         result_gt.append(gt)
     else:
-        gtimage = np.zeros((args.resolution, args.resolution, 3))
-        result_gt.append(gtimage)
+        gt = np.zeros((args.resolution, args.resolution, 3))
+        if args.deep_learning:
+            gt = misc.imresize(gt, size=(args.patch_size, args.patch_size),  interp='nearest').astype(
+                float) / 255  # imresize automatically converts to uint8
+        result_gt.append(gt)
 
 def rendernp(filepath, frames, samples, crackflag):
     nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
@@ -425,6 +472,13 @@ def rendernp(filepath, frames, samples, crackflag):
     bpy.ops.render.render(write_still=True)
 
     result_normals.append(misc.imread(filepath))
+
+    res = misc.imread(filepath)
+    # if used for deep learning, down-sample and exclude alpha channel before feeding into list
+    if args.deep_learning:
+        res = misc.imresize(res, size=(args.patch_size, args.patch_size), interp='nearest').astype(float) / 255  # imresize automatically converts to uint8
+        res = res[:, :, 0:3]
+    result_normals.append(res)
 
 
 def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
@@ -473,11 +527,31 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
             misc.imsave(normal_string, result_normals[len(result_imgs) - 1])
             misc.imsave(gt_string, result_gt[len(result_imgs) - 1])
 
-        # clear the lists of stored results
-        if i % args.batch_size == 0:
-            del result_imgs[:]
-            del result_normals[:]
-            del result_gt[:]
+
+        if i > 0: # additional check as 0 % anything = 0
+            if i % args.batch_size == 0:
+                # feed the deep network
+
+                if args.deep_learning:
+                    # convert the list into numpy arrays and convert from float64 to float32
+                    tmp_imgs = np.array(result_imgs).astype(np.float32)
+                    tmp_gts = np.array(result_gt).astype(np.float32)
+
+                    # torch expects image size[1] to be the channels
+                    tmp_imgs = np.transpose(tmp_imgs, (0, 3, 1, 2))
+                    tmp_gts = np.transpose(tmp_gts, (0, 3, 1, 2))
+
+                    # convert to torch tensor
+                    image_tensor = torch.from_numpy(tmp_imgs)
+                    gt_tensor = torch.from_numpy(tmp_gts)
+
+                    print("Training deep net!")
+                    train(image_tensor, gt_tensor, model, criterion, optimizer)
+
+                # clear the lists of stored results
+                del result_imgs[:]
+                del result_normals[:]
+                del result_gt[:]
 
 
 if __name__ == "__main__": 
