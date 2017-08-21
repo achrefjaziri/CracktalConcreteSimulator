@@ -26,7 +26,7 @@ crack = [0,1]
 batchsize = 2 #will be something less than 6 GB 
 
 # if you wish to save images in a folder set this flag to true
-saveimages = False
+saveimages = True
 
 
 # Three place-holder lists for rendered image, normal map and ground-truth
@@ -399,8 +399,12 @@ def rendergt(filepath, frames, samples, crackflag):
         for l in nodes['Material Output'].inputs['Displacement'].links:
             nodetree.links.remove(l)
         bpy.ops.render.render(write_still=True)
-
-        result_gt.append(misc.imread(filepath))
+        gt = misc.imread(filepath)
+        # binarize the ground-truth map
+        gt = gt > 0
+        gt = gt.astype(int)
+        misc.imsave(filepath, gt)
+        result_gt.append(gt)
     else:
         gtimage = np.zeros((resolution, resolution, 3))
         result_gt.append(gtimage)
@@ -486,4 +490,4 @@ if __name__ == "__main__":
         bpy.ops.object.mode_set(mode='OBJECT')
 
     # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
-    sampleandrender(num_images=10, path='tmp/tmp.png', f=1, s=10)
+    sampleandrender(num_images=10, path='tmp/tmp.png', f=1, s=1)
