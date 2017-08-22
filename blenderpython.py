@@ -41,13 +41,13 @@ result_normals = []
 result_gt = []
 
 # concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
-concretemaps = [1,2] #currently we have 2 maps for concrete albedo, roughness and normal.
+concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
 
 # if directory not found download from online for concrete maps
 if os.path.isdir("concretedictionary"):
     print ("Concrete dictionary maps folder found")
 else:
-    flagres1 = os.system('wget -O concretedictionary.zip "https://drive.google.com/uc?export=download&id=0B81H1jpchFZQNjhSTjBzUUItbEU"')
+    flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
     flagres2 = os.system('unzip concretedictionary.zip')
     flagres3 = os.system('rm concretedictionary.zip')
 
@@ -230,7 +230,7 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
     nodes.new('ShaderNodeMixRGB')
     nodes['Mix'].location = [-300, 750]
     nodes['Mix'].name = 'samplingalbedomix'
-    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.85
+    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.80
 
     # links for sampling nodes
     nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'], nodes['samplingalbedorgb'].outputs['Color'])
@@ -503,10 +503,13 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
         locationval = [locationx[i], locationy[i], locationz[i]]
         rotationval = [rotationx[i], rotationy[i], rotationz[i]]
         scaleval = [scalex[i], scaley[i], scalez[i]]
-        # randomly choose crack or noncrack structure
-        cracked = random.choice(crack)
+        # alternatively choose crack or noncrack structure
+        if i % 2 == 0:
+            cracked = crack[0]
+        else:
+            cracked = crack[1]
         # randomly choose which concrete mapset to use
-        concrete = random.choice(concretemaps)
+        concrete = random.randint(1,concretemaps)
         # remove existing objects present in the scene
         removeexistingobjects()
         # modify existing camera
@@ -524,8 +527,8 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
             gt_string = os.path.join('tmp/gt' + str(i) + '.png')
             normal_string = os.path.join('tmp/normal' + str(i) + '.png')
             misc.imsave(res_string,result_imgs[len(result_imgs)-1])
-            misc.imsave(normal_string, result_normals[len(result_imgs) - 1])
-            misc.imsave(gt_string, result_gt[len(result_imgs) - 1])
+            misc.imsave(normal_string, result_normals[len(result_normals) - 1])
+            misc.imsave(gt_string, result_gt[len(result_gt) - 1])
 
 
         if i > 0: # additional check as 0 % anything = 0
