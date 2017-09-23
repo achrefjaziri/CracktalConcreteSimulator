@@ -7,6 +7,8 @@ import colorsys
 from scipy import misc
 import random
 
+import cv2
+
 # Find out if system has GPU and if it has at least one GPU, it is going to be set
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
 # this behavior you can modify the GPUs index to "use=False": 
@@ -25,59 +27,8 @@ if not dir in sys.path:
 # import custom scripts for map generation
 from lib.fractalcracks import generate_fractal_cracks
 from lib.cmdparser import parse
+from lib.mastershader import MasterShader
 
-# parse command line arguments
-args = parse(sys.argv)
-print("Command line options:")
-for arg in vars(args):
-    print(arg, getattr(args, arg))
-
-# Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
-crack = [0,1]
-
-# Three place-holder lists for rendered image, normal map and ground-truth
-result_imgs = []
-result_normals = []
-result_gt = []
-
-# concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
-concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
-
-# if directory not found download from online for concrete maps
-if os.path.isdir("concretedictionary"):
-    print ("Concrete dictionary maps folder found")
-else:
-    flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
-    flagres2 = os.system('unzip concretedictionary.zip')
-    flagres3 = os.system('rm concretedictionary.zip')
-
-# only initialize a deep network if the save option to generate
-# TODO: Deepnet stuff desperately needs a refactor
-if args.deep_learning:
-    import torch
-    import torch.nn.parallel
-    import torch.backends.cudnn as cudnn
-    import lib.deep_architectures
-    from lib.train import train, validate
-
-    # create deep network model
-    net_init_method = getattr(lib.deep_architectures, args.architecture)
-    model = net_init_method()
-    if UseGPU:
-        model = torch.nn.DataParallel(model).cuda()
-
-    print("Neural Network architecture: \n", model)
-    # CUDNN
-    cudnn.benchmark = True
-
-    if UseGPU:
-        criterion = torch.nn.MSELoss().cuda()
-    else:
-        criterion = torch.nn.MSELoss()
-
-    optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
 
 
 def removeexistingobjects():
@@ -145,29 +96,61 @@ def lightsource():
     bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
 
 
+def setScene():
+    pass;
+
 def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1, cracked=1):
+    print("Setting mastershader...");
     # add a base primitive mesh. in this case a plane mesh is added at origin
+    print("Set primitive mesh")
     bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
     # default object name is 'Plane'. or index 2 in this case
     # set scale and rotation
+    print("Modify mesh")
     bpy.data.objects['Plane'].scale = [6.275, 6.275, 6.275]
     bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
+    shadername = "concrete";
+    albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
+    roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
+    normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
+    
+    print("Init shader");
+    shader = MasterShader(shadername, albedoPath, roughnessPath, normalPath);
+    print("Done...");
+    print("Link shader to plane object");
+    bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
+    print("Done...");
+
+    # TODO: sample shader image sources!
+
+    print("Sample shader values");
+    shader.sampleTexture();
+    print("Done...");
+    
+    print("Apply shader to obj mesh");
+    shader.applyTo("Plane");
+    print("Done...");
+
+    """
     #add material to the object. first create a new material
+    print("set material")
     bpy.ops.material.new()
-    # give a name to material if needed. new material default name 'Material' or access 0 index
+    # give a name to material if import colorsysneeded. new material default name 'Material' or access 0 index
     bpy.data.materials['Material'].name = 'concrete'
     # link material to the plane mesh
     bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete']
 
     # now in order to design the master shader for our material with concrete maps we need to use node editor.
     bpy.data.materials['concrete'].use_nodes = True
+    print("Done...")
 
     # MASTER SHADER
     # material usually has diffuse bsdf connected to its surface input. check node editor by pressing shift+f3
     # master shader for general material is based on "PBR workflows in Cycles Render Engine" by Joonas Sairiala
     # with concrete being mainly dielectric with little or no metallic property,
     # it requires a base diffuse bsdf and glossy bsdf
+    print("init shader");
     nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
     nodes = bpy.data.materials['concrete'].node_tree.nodes
     nodes.new('ShaderNodeBsdfGlossy')
@@ -185,8 +168,10 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
     nodes.new('ShaderNodeFresnel')
     nodes['Fresnel'].name = 'fresnel1'
     nodes['fresnel1'].location = [200, 500]
+    print("done...");
 
     # Now to link node inputs and outputs
+    print("shader linkset 1");
     nodetree.links.new(nodes['basebsdf'].outputs['BSDF'], nodes['mixbasespec'].inputs[1])  # index 1 corresponds to mix shader's shader input 1
     nodetree.links.new(nodes['specbsdf'].outputs['BSDF'], nodes['mixbasespec'].inputs[2])
     nodetree.links.new(nodes['fresnel1'].outputs[0], nodes['mixbasespec'].inputs[0])
@@ -200,14 +185,22 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
     nodes.new('ShaderNodeTexImage')
     nodes['Image Texture'].name = 'normalconcrete' #normal concrete
     nodes['normalconcrete'].location = [-600, -600]
+    print("Done...");
 
     #link images to imagetexture node
-    bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete'+str(concrete)+'/albedo'+str(concrete)+'.png')) #first open image to link
+    print("loade image textures");
+    #bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete'+str(concrete)+'/albedo'+str(concrete)+'.png')) #first open image to link
+    bpy.ops.image.open(filepath="concretedictionary/concrete"+str(concrete)+'/albedo'+str(concrete)+".png");
+    print("managed to open image");
     nodes['albedoconcrete'].image = bpy.data.images[os.path.join('albedo'+str(concrete)+'.png')]
+    print("1st loaded...")
     bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png'))
     nodes['roughnessconcrete'].image = bpy.data.images[os.path.join('roughness' + str(concrete) + '.png')]
+    print("2nd loaded...")
     bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png'))
     nodes['normalconcrete'].image = bpy.data.images[os.path.join('normal' + str(concrete) + '.png')]
+    print("3rd loaded...");
+    print("Done...");
 
     # random albedo and other map rgb and mix nodes for random sampling
     nodes.new('ShaderNodeRGB')
@@ -335,11 +328,13 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
         nodetree.links.new(nodes['normalconcrete'].outputs['Color'], nodes['Material Output'].inputs['Displacement'])
 
     #now we need to uv unwrap over the entire mesh
+    # THIS IS PRETTY LUCKY! NEEDS TO BE CHANGED
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.unwrap()
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
+    """
 
 
 def render(path, f, s, cracked):
@@ -482,6 +477,7 @@ def rendernp(filepath, frames, samples, crackflag):
 
 
 def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
+    print("Sampling render called...");
     hval = np.random.normal(0.5, 0.3, size=num_images)
     sval = np.random.normal(0.5, 0.3, size=num_images)
     hval = np.clip(hval, 0, 1)
@@ -498,11 +494,13 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
     scalex = np.random.uniform(0.75, 1.25, size=num_images)
     scaley = np.random.uniform(0.75, 1.25, size=num_images)
     scalez = np.random.uniform(0.75, 1.25, size=num_images)
+    print("init complete...");
     for i in range(num_images):
         albedoval = [hval[i], sval[i], vval[i]]
         locationval = [locationx[i], locationy[i], locationz[i]]
         rotationval = [rotationx[i], rotationy[i], rotationz[i]]
-        scaleval = [scalex[i], scaley[i], scalez[i]]
+        scaleval = [scalex[i], scaley[i], scalez[i]] 
+        print("maps loaded...");
         # alternatively choose crack or noncrack structure
         if i % 2 == 0:
             cracked = crack[0]
@@ -511,15 +509,25 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
         # randomly choose which concrete mapset to use
         concrete = random.randint(1,concretemaps)
         # remove existing objects present in the scene
+        print("remove existing objects...");
         removeexistingobjects()
+        print("Done...")
         # modify existing camera
+        print("modify camera settings...");
         camerasettings()
+        print("Done...");
         # modify existing light source
+        print("modify lightsources...");
         lightsource()
+        print("Done...")
         # master shader for material with mesh
+        print("Setting master shader...");
         mastershader(albedoval, locationval, rotationval, scaleval, concrete, cracked)
+        print("Done...");
         # render the engine
+        print("Rendering...");
         render(path, f, s, cracked)
+        print("Done...");
 
         # save images to temporary folder if required for viewing later on
         if args.save_images:
@@ -557,14 +565,79 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
                 del result_gt[:]
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
+    
+
+    # parse command line arguments
+    args = parse(sys.argv)
+    print("Command line options:")
+    for arg in vars(args):
+        print(arg, getattr(args, arg))
+
+    # Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
+    crack = [0,1]
+
+    # Three place-holder lists for rendered image, normal map and ground-truth
+    result_imgs = []
+    result_normals = []
+    result_gt = []
+
+    # concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
+    concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
+
+    # if directory not found download from online for concrete maps
+    if os.path.isdir("concretedictionary"):
+        print ("Concrete dictionary maps folder found")
+    else:
+        flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
+        flagres2 = os.system('unzip concretedictionary.zip')
+        flagres3 = os.system('rm concretedictionary.zip')
+
+    print("Base texture maps have been loaded...");
+
+    # only initialize a deep network if the save option to generate
+    # TODO: Deepnet stuff desperately needs a refactor
+    if args.deep_learning:
+        print("Importing deep learning modules...");
+        import torch
+        import torch.nn.parallel
+        import torch.backends.cudnn as cudnn
+        import lib.deep_architectures
+        from lib.train import train, validate
+
+        # create deep network model
+        net_init_method = getattr(lib.deep_architectures, args.architecture)
+        model = net_init_method()
+        if UseGPU:
+            model = torch.nn.DataParallel(model).cuda()
+
+        print("Neural Network architecture: \n", model)
+        # CUDNN
+        cudnn.benchmark = True
+
+        if UseGPU:
+            criterion = torch.nn.MSELoss().cuda()
+        else:
+            criterion = torch.nn.MSELoss()
+
+        optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
+                                    momentum=args.momentum,
+                                    weight_decay=args.weight_decay)
+
     #ensure that cycles engine is set for the basic scene.
     #predefined object name for scene is 'Scene'. Also can be accesed by index 0.
+    print("Setting rendering engine to Cycles render")
     bpy.data.scenes['Scene'].render.engine = 'CYCLES'
+    print("Done...");
+
     # check if mode is object mode else set it to object mode
+    print("Selecting object mode...");
     checkmode = bpy.context.active_object.mode
     if checkmode != 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')
+    print("Done...");
 
     # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
+    print("Do sampling render...");
     sampleandrender(args.num_images, args.samples, path='tmp/tmp.png', f=1)
+    print("Done...");
