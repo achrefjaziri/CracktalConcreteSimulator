@@ -28,6 +28,7 @@ if not dir in sys.path:
 from lib.fractalcracks import generate_fractal_cracks
 from lib.cmdparser import parse
 from lib.mastershader import MasterShader
+from lib.crackshader import CrackShader
 
 
 
@@ -115,226 +116,40 @@ def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[
     roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
     normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
     
-    print("Init shader");
-    shader = MasterShader(shadername, albedoPath, roughnessPath, normalPath);
-    print("Done...");
-    print("Link shader to plane object");
-    bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
-    print("Done...");
+    if(not cracked):
+        print("Init mastershader");
+        shader = MasterShader(shadername, albedoPath, roughnessPath, normalPath);
+        print("Done...");
+        print("Link shader to plane object");
+        bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
+        print("Done...");
 
-    # TODO: sample shader image sources!
+        # TODO: sample shader image sources!
 
-    print("Sample shader values");
-    shader.sampleTexture();
-    print("Done...");
-    
-    print("Apply shader to obj mesh");
-    shader.applyTo("Plane");
-    print("Done...");
+        print("Sample shader values");
+        shader.sampleTexture();
+        print("Done...");
+        
+        print("Apply shader to obj mesh");
+        shader.applyTo("Plane");
+        print("Done...");
+    elif(cracked):
+        print("Init crackshader");
+        shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, args.resolution);
+        print("Done...");
+        print("Link shader to plane object");
+        bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
+        print("Done...");
 
-    """
-    #add material to the object. first create a new material
-    print("set material")
-    bpy.ops.material.new()
-    # give a name to material if import colorsysneeded. new material default name 'Material' or access 0 index
-    bpy.data.materials['Material'].name = 'concrete'
-    # link material to the plane mesh
-    bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete']
+        # TODO: sample shader image sources!
 
-    # now in order to design the master shader for our material with concrete maps we need to use node editor.
-    bpy.data.materials['concrete'].use_nodes = True
-    print("Done...")
-
-    # MASTER SHADER
-    # material usually has diffuse bsdf connected to its surface input. check node editor by pressing shift+f3
-    # master shader for general material is based on "PBR workflows in Cycles Render Engine" by Joonas Sairiala
-    # with concrete being mainly dielectric with little or no metallic property,
-    # it requires a base diffuse bsdf and glossy bsdf
-    print("init shader");
-    nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
-    nodes = bpy.data.materials['concrete'].node_tree.nodes
-    nodes.new('ShaderNodeBsdfGlossy')
-    # give names for nodes for easy understanding
-    nodes['Diffuse BSDF'].name = 'basebsdf'
-    nodes['Glossy BSDF'].name = 'specbsdf'
-    nodes.new('ShaderNodeMixShader')
-    nodes['Mix Shader'].name = 'mixbasespec'
-
-    nodes['basebsdf'].inputs['Roughness'].default_value = 0.601 # based on curet database https://wiki.blender.org/index.php/User:Guiseppe/Oren_Nayar
-
-    # you can modify nodes location from the script. useful for viewing in node editor. This is mainly for viewing easily.
-    nodes['Material Output'].location = [650, 300]
-    nodes['mixbasespec'].location = [450, 100]
-    nodes.new('ShaderNodeFresnel')
-    nodes['Fresnel'].name = 'fresnel1'
-    nodes['fresnel1'].location = [200, 500]
-    print("done...");
-
-    # Now to link node inputs and outputs
-    print("shader linkset 1");
-    nodetree.links.new(nodes['basebsdf'].outputs['BSDF'], nodes['mixbasespec'].inputs[1])  # index 1 corresponds to mix shader's shader input 1
-    nodetree.links.new(nodes['specbsdf'].outputs['BSDF'], nodes['mixbasespec'].inputs[2])
-    nodetree.links.new(nodes['fresnel1'].outputs[0], nodes['mixbasespec'].inputs[0])
-    nodetree.links.new(nodes['mixbasespec'].outputs[0], nodes['Material Output'].inputs['Surface'])
-    nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name = 'albedoconcrete' #albedo concrete
-    nodes['albedoconcrete'].location = [-600, 600]
-    nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name = 'roughnessconcrete' #roughness concrete
-    nodes['roughnessconcrete'].location = [-600, 0]
-    nodes.new('ShaderNodeTexImage')
-    nodes['Image Texture'].name = 'normalconcrete' #normal concrete
-    nodes['normalconcrete'].location = [-600, -600]
-    print("Done...");
-
-    #link images to imagetexture node
-    print("loade image textures");
-    #bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete'+str(concrete)+'/albedo'+str(concrete)+'.png')) #first open image to link
-    bpy.ops.image.open(filepath="concretedictionary/concrete"+str(concrete)+'/albedo'+str(concrete)+".png");
-    print("managed to open image");
-    nodes['albedoconcrete'].image = bpy.data.images[os.path.join('albedo'+str(concrete)+'.png')]
-    print("1st loaded...")
-    bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png'))
-    nodes['roughnessconcrete'].image = bpy.data.images[os.path.join('roughness' + str(concrete) + '.png')]
-    print("2nd loaded...")
-    bpy.ops.image.open(filepath=os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png'))
-    nodes['normalconcrete'].image = bpy.data.images[os.path.join('normal' + str(concrete) + '.png')]
-    print("3rd loaded...");
-    print("Done...");
-
-    # random albedo and other map rgb and mix nodes for random sampling
-    nodes.new('ShaderNodeRGB')
-    nodes['RGB'].name = 'samplingalbedorgb'
-    nodes['samplingalbedorgb'].location = [-600, 900]
-    nodes.new('ShaderNodeMapping')
-    nodes['Mapping'].name = 'samplingmap'
-    nodes['samplingmap'].location = [-1200, 0]
-    nodes['samplingmap'].vector_type = 'VECTOR'
-    nodes.new('ShaderNodeVectorMath')
-    nodes['Vector Math'].operation = 'ADD'
-    nodes['Vector Math'].name = 'addtranslation'
-    nodes['addtranslation'].location = [-1500, 0]
-    nodes.new('ShaderNodeRGB')
-    nodes['RGB'].name = 'samplingtranslationrgb'
-    nodes['samplingtranslationrgb'].location = [-1800, 0]
-    nodes.new('ShaderNodeTexCoord')
-    nodes['Texture Coordinate'].name = 'texcoord1'
-    nodes['texcoord1'].location = [-1800, -300]
-    nodes.new('ShaderNodeMixRGB')
-    nodes['Mix'].location = [-300, 750]
-    nodes['Mix'].name = 'samplingalbedomix'
-    nodes['samplingalbedomix'].inputs['Fac'].default_value = 0.80
-
-    # links for sampling nodes
-    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color1'], nodes['samplingalbedorgb'].outputs['Color'])
-    nodetree.links.new(nodes['samplingalbedomix'].inputs['Color2'], nodes['albedoconcrete'].outputs['Color'])
-
-    nodetree.links.new(nodes['samplingmap'].outputs['Vector'], nodes['albedoconcrete'].inputs['Vector'])
-    nodetree.links.new(nodes['samplingmap'].outputs['Vector'], nodes['roughnessconcrete'].inputs['Vector'])
-    nodetree.links.new(nodes['samplingmap'].outputs['Vector'], nodes['normalconcrete'].inputs['Vector'])
-    nodetree.links.new(nodes['addtranslation'].outputs['Vector'], nodes['samplingmap'].inputs['Vector'])
-    nodetree.links.new(nodes['addtranslation'].inputs[0], nodes['samplingtranslationrgb'].outputs['Color'])
-    nodetree.links.new(nodes['addtranslation'].inputs[1], nodes['texcoord1'].outputs['UV'])
-
-    # sampling values passed to the function
-    nodes['samplingmap'].scale = [scaleval[0], scaleval[1], scaleval[2]]
-    nodes['samplingmap'].rotation = [rotationval[0] * math.pi / 180, rotationval[1] * math.pi / 180,
-                                     rotationval[2] * math.pi / 180]
-    # rgb values for albedo change. need to convert hsv to rgb to use it here.
-    rgbval = colorsys.hsv_to_rgb(albedoval[0], albedoval[1], albedoval[2])
-    nodes['samplingalbedorgb'].outputs[0].default_value[0] = rgbval[0]
-    nodes['samplingalbedorgb'].outputs[0].default_value[1] = rgbval[1]
-    nodes['samplingalbedorgb'].outputs[0].default_value[2] = rgbval[2]
-
-    # translation sampling
-    nodes['samplingtranslationrgb'].outputs[0].default_value[0] = locationval[0]
-    nodes['samplingtranslationrgb'].outputs[0].default_value[1] = locationval[1]
-    nodes['samplingtranslationrgb'].outputs[0].default_value[2] = locationval[2]
-
-    ## crack nodes
-    if cracked:
-        nodes.new('ShaderNodeTexImage')
-        nodes['Image Texture'].name = 'albedocrack' #albedo crack
-        nodes['albedocrack'].location = [-600, 300]
-        nodes.new('ShaderNodeTexImage')
-        nodes['Image Texture'].name = 'roughnesscrack' #roughness crack
-        nodes['roughnesscrack'].location = [-600, -300]
-        nodes.new('ShaderNodeTexImage')
-        nodes['Image Texture'].name = 'normalcrack' #normal crack
-        nodes['normalcrack'].location = [-600, -900]
-
-        generated_maps = []
-        # generate crack maps
-        generated_maps[0:2] = (generate_fractal_cracks(args.resolution, 7))
-        # order is: albedo, roughness, normals
-        # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
-        # for all other maps add an alpha channel that is filled with ones
-        for i in range(0, len(generated_maps)):
-            # last shape index is amount of color channels
-            if generated_maps[i].shape[-1] != 4:
-                tmp = np.zeros((generated_maps[i].shape[0], generated_maps[i].shape[1], 4)) #place-holder
-                tmp[:,:,0:3] = generated_maps[i] # copy old 3 channels
-                tmp[:,:,3] = 1 # fill 4. alpha channel
-                generated_maps[i] = tmp # copy back
-
-        # initialize empty texture structures of corresponding size
-        imgT_albedo = bpy.data.images.new("albedo_image", width=args.resolution, height=args.resolution)
-        imgT_roughness = bpy.data.images.new("roughness_image", width=args.resolution, height=args.resolution)
-        imgT_normals = bpy.data.images.new("normals_image", width=args.resolution, height=args.resolution)
-
-        # flatten the arrays and assign them to the place-holder textures
-        imgT_albedo.pixels = generated_maps[0].flatten().tolist()
-        imgT_roughness.pixels = generated_maps[1].flatten().tolist()
-        imgT_normals.pixels = generated_maps[2].flatten().tolist()
-
-        # feed new texture into appropriate nodes
-        nodes['albedocrack'].image = imgT_albedo
-        nodes['roughnesscrack'].image = imgT_roughness
-        nodes['normalcrack'].image = imgT_normals
-
-        # create mix rgb nodes to mix crack maps and original image pbr maps
-        nodes.new('ShaderNodeMixRGB')
-        nodes['Mix'].name = 'albedomix'
-        nodes['albedomix'].location = [-400, 450]
-        nodes.new('ShaderNodeMixRGB')
-        nodes['Mix'].name = 'roughnessmix'
-        nodes['roughnessmix'].location = [-400, -150]
-        nodes.new('ShaderNodeMixRGB')
-        nodes['Mix'].name = 'normalmix'
-        nodes['normalmix'].location = [-400, -750]
-
-        # link crack and original map nodes to mixrgb
-        nodetree.links.new(nodes['albedoconcrete'].outputs['Color'], nodes['albedomix'].inputs[1])
-        nodetree.links.new(nodes['albedocrack'].outputs['Color'], nodes['albedomix'].inputs[2])
-        nodetree.links.new(nodes['roughnessconcrete'].outputs['Color'], nodes['roughnessmix'].inputs[1])
-        nodetree.links.new(nodes['roughnesscrack'].outputs['Color'], nodes['roughnessmix'].inputs[2])
-        nodetree.links.new(nodes['normalconcrete'].outputs['Color'], nodes['normalmix'].inputs[1])
-        nodetree.links.new(nodes['normalcrack'].outputs['Color'], nodes['normalmix'].inputs[2])
-
-        # add appropriate factors for scaling mixrgb nodes
-        nodetree.links.new(nodes['albedocrack'].outputs['Alpha'], nodes['albedomix'].inputs[0])
-        # value for albedomix comes for crack map alpha
-        nodes['roughnessmix'].inputs[0].default_value = 0.25
-        nodes['normalmix'].inputs[0].default_value = 0.75
-
-        #link albedo, roughness and normal mixrgb maps to color, roughness displacement.
-        nodetree.links.new(nodes['albedomix'].outputs['Color'], nodes['basebsdf'].inputs['Color'])
-        nodetree.links.new(nodes['roughnessmix'].outputs['Color'], nodes['specbsdf'].inputs['Roughness'])
-        nodetree.links.new(nodes['normalmix'].outputs['Color'], nodes['Material Output'].inputs['Displacement'])
-        nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'], nodes['albedomix'].inputs['Color1'])
-    else:
-        nodetree.links.new(nodes['samplingalbedomix'].outputs['Color'], nodes['basebsdf'].inputs['Color'])
-        nodetree.links.new(nodes['roughnessconcrete'].outputs['Color'], nodes['specbsdf'].inputs['Roughness'])
-        nodetree.links.new(nodes['normalconcrete'].outputs['Color'], nodes['Material Output'].inputs['Displacement'])
-
-    #now we need to uv unwrap over the entire mesh
-    # THIS IS PRETTY LUCKY! NEEDS TO BE CHANGED
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.unwrap()
-    bpy.ops.mesh.select_all(action='DESELECT')
-    bpy.ops.object.mode_set(mode='OBJECT')
-    """
+        print("Sample shader values");
+        shader.sampleTexture();
+        print("Done...");
+        
+        print("Apply shader to obj mesh");
+        shader.applyTo("Plane");
+        print("Done...");
 
 
 def render(path, f, s, cracked):
@@ -503,7 +318,7 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
         print("maps loaded...");
         # alternatively choose crack or noncrack structure
         if i % 2 == 0:
-            cracked = crack[0]
+            cracked = crack[1]
         else:
             cracked = crack[1]
         # randomly choose which concrete mapset to use

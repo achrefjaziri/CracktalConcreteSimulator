@@ -21,10 +21,11 @@ class MasterShader():
         self._nodetree = None;
         self._nodes = None;
 
-        self._setup();
+        self.__setup();
 
 
-    def _setup(self):
+    def __setup(self):
+        print("mastershader setup")
         bpy.ops.material.new()
         
         bpy.data.materials['Material'].name = self.name
