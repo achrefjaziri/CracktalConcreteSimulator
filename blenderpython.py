@@ -30,9 +30,10 @@ from lib.cmdparser import parse
 from lib.mastershader import MasterShader
 from lib.crackshader import CrackShader
 
+from scenes.concretescene import ConcreteScene
 
 
-def removeexistingobjects():
+def resetSceneToEmpty():
     check = bpy.data.objects is not None
     # remove pre-existing objects from blender
     if check == True:
@@ -50,106 +51,10 @@ def removeexistingobjects():
                 bpy.data.lamps.remove(lamp, do_unlink=True)
 
 
-def camerasettings():
-    # add camera
-    bpy.ops.object.camera_add()
-    # location of camera
-    bpy.data.objects['Camera'].location = (0.0, -15.0, 2.0)
-    # rotation of camera. x axis rotation is 105.125 degrees in this example
-    bpy.data.objects['Camera'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
-    # scale of camera usually unaltered.
-    bpy.data.objects['Camera'].scale = [1.0, 1.0, 1.0]
-    # by default camera type is perspective. uncomment below line for changing camera to orthographic.
-    #bpy.data.cameras['Camera'].type='ORTHO'     #PERSP for perspective. default orthographic scale is 7.314
-    # focal length of camera
-    bpy.data.cameras['Camera'].lens = 35.00
-    # focal length unit
-    bpy.data.cameras['Camera'].lens_unit = 'MILLIMETERS' #FOV for field of view
-    # note: you can add camera presets like samsung galaxy s4.
-    # look at documentation and uncomment below line and modify accordinly. below line not tested
-    #bpy.ops.script.execute_preset(filepath="yourpathlocation")
-
-
-def lightsource():
-    # add lamp
-    bpy.ops.object.lamp_add(type='SUN')
-    # change sun location.
-    bpy.data.objects['Sun'].location = [0.0,-5.0,5.0]
-    bpy.data.objects['Sun'].rotation_euler = [59*math.pi/180, 0.0, 0.0]
-
-    # you can modify object names. example given below. uncomment if needed.
-    # if uncommented upcoming commands should also be modified accordingly
-    #bpy.data.lamps[0].name = 'Sun'
-    #bpy.data.objects['Sun'].name = 'Sun'
-    # you can add more light sources. uncomment below line for example light source
-    #bpy.ops.object.lamp_add(type='POINT')
-
-    # change rotation of sun's direction vector.
-    bpy.data.objects['Sun'].rotation_euler = [59*math.pi/180, 0.0, 0.0]
-    # in order to change color, strength of sun, we have to use nodes.
-    # also node editing is quite useful for designing layers to your rendering
-    bpy.data.lamps['Sun'].use_nodes = True
-    # in the above statement we used 'Lamp' instead of index 0.
-    # The default name of lamps is 'Lamp' as described in the above comments.
-
-    # set color and strength value of sun using nodes.
-    bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
-    bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
-
-
-def setScene():
-    pass;
-
-def mastershader(albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1, cracked=1):
-    print("Setting mastershader...");
-    # add a base primitive mesh. in this case a plane mesh is added at origin
-    print("Set primitive mesh")
-    bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
-    # default object name is 'Plane'. or index 2 in this case
-    # set scale and rotation
-    print("Modify mesh")
-    bpy.data.objects['Plane'].scale = [6.275, 6.275, 6.275]
-    bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
-
-    shadername = "concrete";
-    albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
-    roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
-    normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
-    
-    if(not cracked):
-        print("Init mastershader");
-        shader = MasterShader(shadername, albedoPath, roughnessPath, normalPath);
-        print("Done...");
-        print("Link shader to plane object");
-        bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
-        print("Done...");
-
-        # TODO: sample shader image sources!
-
-        print("Sample shader values");
-        shader.sampleTexture();
-        print("Done...");
-        
-        print("Apply shader to obj mesh");
-        shader.applyTo("Plane");
-        print("Done...");
-    elif(cracked):
-        print("Init crackshader");
-        shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, args.resolution);
-        print("Done...");
-        print("Link shader to plane object");
-        bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
-        print("Done...");
-
-        # TODO: sample shader image sources!
-
-        print("Sample shader values");
-        shader.sampleTexture();
-        print("Done...");
-        
-        print("Apply shader to obj mesh");
-        shader.applyTo("Plane");
-        print("Done...");
+def setUpScene():
+    print("Setting up ConcreteScene");
+    currScene = ConcreteScene(args.resolution);
+    print("Done...");
 
 
 def render(path, f, s, cracked):
@@ -292,30 +197,7 @@ def rendernp(filepath, frames, samples, crackflag):
 
 
 def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
-    print("Sampling render called...");
-    hval = np.random.normal(0.5, 0.3, size=num_images)
-    sval = np.random.normal(0.5, 0.3, size=num_images)
-    hval = np.clip(hval, 0, 1)
-    sval = np.clip(sval, 0, 1)
-    vval = np.empty(num_images, dtype='float64')
-    vval.fill(0.529)
-    # location sampling has to be between 0 and 1 because we are using RGB mixer node for translation
-    locationx = np.random.uniform(0, 1, size=num_images)
-    locationy = np.random.uniform(0, 1, size=num_images)
-    locationz = np.random.uniform(0, 1, size=num_images)
-    rotationx = np.random.uniform(0, 15, size=num_images)
-    rotationy = np.random.uniform(0, 15, size=num_images)
-    rotationz = np.random.uniform(0, 15, size=num_images)
-    scalex = np.random.uniform(0.75, 1.25, size=num_images)
-    scaley = np.random.uniform(0.75, 1.25, size=num_images)
-    scalez = np.random.uniform(0.75, 1.25, size=num_images)
-    print("init complete...");
     for i in range(num_images):
-        albedoval = [hval[i], sval[i], vval[i]]
-        locationval = [locationx[i], locationy[i], locationz[i]]
-        rotationval = [rotationx[i], rotationy[i], rotationz[i]]
-        scaleval = [scalex[i], scaley[i], scalez[i]] 
-        print("maps loaded...");
         # alternatively choose crack or noncrack structure
         if i % 2 == 0:
             cracked = crack[1]
@@ -325,21 +207,13 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
         concrete = random.randint(1,concretemaps)
         # remove existing objects present in the scene
         print("remove existing objects...");
-        removeexistingobjects()
+        resetSceneToEmpty()
         print("Done...")
-        # modify existing camera
-        print("modify camera settings...");
-        camerasettings()
+        
+        print("Setting up scene...");
+        setUpScene();
         print("Done...");
-        # modify existing light source
-        print("modify lightsources...");
-        lightsource()
-        print("Done...")
-        # master shader for material with mesh
-        print("Setting master shader...");
-        mastershader(albedoval, locationval, rotationval, scaleval, concrete, cracked)
-        print("Done...");
-        # render the engine
+
         print("Rendering...");
         render(path, f, s, cracked)
         print("Done...");
@@ -353,11 +227,9 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
             misc.imsave(normal_string, result_normals[len(result_normals) - 1])
             misc.imsave(gt_string, result_gt[len(result_gt) - 1])
 
-
         if i > 0: # additional check as 0 % anything = 0
             if i % args.batch_size == 0:
                 # feed the deep network
-
                 if args.deep_learning:
                     # convert the list into numpy arrays and convert from float64 to float32
                     tmp_imgs = np.array(result_imgs).astype(np.float32)
@@ -381,8 +253,6 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
 
 
 if __name__ == "__main__":
-    
-
     # parse command line arguments
     args = parse(sys.argv)
     print("Command line options:")

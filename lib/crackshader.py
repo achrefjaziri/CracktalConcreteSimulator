@@ -32,7 +32,6 @@ class CrackShader(MasterShader):
 
         generated_maps = []
         # generate crack maps
-        print(cv2.imread(self.albedoTexPath).shape);
         generated_maps[0:2] = (generate_fractal_cracks(self.resolution, 7))
         # order is: albedo, roughness, normals
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
