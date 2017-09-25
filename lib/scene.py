@@ -8,6 +8,8 @@ import colorsys
 
 class Scene():
     def __init__(self):
+        self.shaderDict = {};
+
         self.resetSceneToEmpty();
         self.setUp();
 
@@ -45,3 +47,6 @@ class Scene():
                     bpy.data.cameras.remove(camera, do_unlink=True)
                 for lamp in bpy.data.lamps:
                     bpy.data.lamps.remove(lamp, do_unlink=True)
+
+    def update(self):
+        pass;

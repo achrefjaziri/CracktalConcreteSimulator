@@ -38,53 +38,63 @@ class MasterShader():
 
         self._nodetree = bpy.data.materials[self.name].node_tree  # required for linking
         self._nodes = bpy.data.materials[self.name].node_tree.nodes
-        self._nodes.new('ShaderNodeBsdfGlossy')
-        # give names for nodes for easy understanding
+
+        self._nodes.new('ShaderNodeBsdfGlossy') # give names for nodes for easy understanding
         self._nodes['Diffuse BSDF'].name = 'basebsdf'
         self._nodes['Glossy BSDF'].name = 'specbsdf'
+
         self._nodes.new('ShaderNodeMixShader')
         self._nodes['Mix Shader'].name = 'mixbasespec'
         self._nodes['basebsdf'].inputs['Roughness'].default_value = 0.601 # based on curet database https://wiki.blender.org/index.php/User:Guiseppe/Oren_Nayar
         self._nodes['Material Output'].location = [650, 300]
         self._nodes['mixbasespec'].location = [450, 100]
+       
         self._nodes.new('ShaderNodeFresnel')
         self._nodes['Fresnel'].name = 'fresnel1'
         self._nodes['fresnel1'].location = [200, 500]
+
         self._nodetree.links.new(self._nodes['basebsdf'].outputs['BSDF'], self._nodes['mixbasespec'].inputs[1])  # index 1 corresponds to mix shader's shader input 1
         self._nodetree.links.new(self._nodes['specbsdf'].outputs['BSDF'], self._nodes['mixbasespec'].inputs[2])
         self._nodetree.links.new(self._nodes['fresnel1'].outputs[0], self._nodes['mixbasespec'].inputs[0])
         self._nodetree.links.new(self._nodes['mixbasespec'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+        
         self._nodes.new('ShaderNodeTexImage')
         self._nodes['Image Texture'].name = 'albedoconcrete' #albedo concrete
         self._nodes['albedoconcrete'].location = [-600, 600]
+
         self._nodes.new('ShaderNodeTexImage')
         self._nodes['Image Texture'].name = 'roughnessconcrete' #roughness concrete
         self._nodes['roughnessconcrete'].location = [-600, 0]
+        
         self._nodes.new('ShaderNodeTexImage')
         self._nodes['Image Texture'].name = 'normalconcrete' #normal concrete
         self._nodes['normalconcrete'].location = [-600, -600]
 
-        # LINK IMAGES TO TEXTURE NODES
-        self._linkImagesToTextureNodes();
+        self._loadImagesToTextureNodes();
 
         # random albedo and other map rgb and mix nodes for random sampling
         self._nodes.new('ShaderNodeRGB')
         self._nodes['RGB'].name = 'samplingalbedorgb'
         self._nodes['samplingalbedorgb'].location = [-600, 900]
+        
         self._nodes.new('ShaderNodeMapping')
         self._nodes['Mapping'].name = 'samplingmap'
         self._nodes['samplingmap'].location = [-1200, 0]
         self._nodes['samplingmap'].vector_type = 'VECTOR'
+        
         self._nodes.new('ShaderNodeVectorMath')
         self._nodes['Vector Math'].operation = 'ADD'
         self._nodes['Vector Math'].name = 'addtranslation'
         self._nodes['addtranslation'].location = [-1500, 0]
+        
         self._nodes.new('ShaderNodeRGB')
         self._nodes['RGB'].name = 'samplingtranslationrgb'
         self._nodes['samplingtranslationrgb'].location = [-1800, 0]
+        
         self._nodes.new('ShaderNodeTexCoord')
         self._nodes['Texture Coordinate'].name = 'texcoord1'
         self._nodes['texcoord1'].location = [-1800, -300]
+        
         self._nodes.new('ShaderNodeMixRGB')
         self._nodes['Mix'].location = [-300, 750]
         self._nodes['Mix'].name = 'samplingalbedomix'
@@ -101,15 +111,34 @@ class MasterShader():
         self._nodetree.links.new(self._nodes['addtranslation'].inputs[0], self._nodes['samplingtranslationrgb'].outputs['Color'])
         self._nodetree.links.new(self._nodes['addtranslation'].inputs[1], self._nodes['texcoord1'].outputs['UV'])
 
-        self._linkSamplingNodes();
+        self._loadParametersToSamplingNodes();
 
         self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['basebsdf'].inputs['Color'])
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
         self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['Material Output'].inputs['Displacement'])
 
+        # Emmission Shader Node
+        self._nodes.new('ShaderNodeEmission')
+        self._nodes['Emission'].name = 'emit1'
+        self._nodes['emit1'].location = [450, -100]
 
+    def setShaderModeGT(self):
+        pass;
 
-    def _linkImagesToTextureNodes(self):
+    def setShaderModeNormalMap(self):
+        nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
+        nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalconcrete'].outputs['Color'])
+        for l in nodes['Material Output'].inputs['Displacement'].links:
+            nodetree.links.remove(l)
+
+    def setShaderModeColor(self):
+        self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['basebsdf'].inputs['Color'])
+        self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
+        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['Material Output'].inputs['Displacement'])
+        
+        self._nodetree.links.new(self._nodes['mixbasespec'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+
+    def _loadImagesToTextureNodes(self):
         # ALBEDO MAP
         bpy.ops.image.open(filepath=self.albedoTexPath);
         self._nodes['albedoconcrete'].image = bpy.data.images[self.albedoTexPath.split("/")[-1]]
@@ -120,7 +149,8 @@ class MasterShader():
         bpy.ops.image.open(filepath=self.normalTexPath)
         self._nodes['normalconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
-    def _linkSamplingNodes(self):
+
+    def _loadParametersToSamplingNodes(self):
         # sampling values passed to the function
         self._nodes['samplingmap'].scale = [self.scalevals[0], self.scalevals[1], self.scalevals[2]]
         self._nodes['samplingmap'].rotation = [self.rotationvals[0] * math.pi / 180, self.rotationvals[1] * math.pi / 180,
@@ -156,8 +186,7 @@ class MasterShader():
         self._sampleAlbedo();
         self._sampleLocationParameters();
 
-        self._linkSamplingNodes();
-
+        self._loadParametersToSamplingNodes();
 
     def _sampleAlbedo(self):
         hval = np.random.normal(0.5, 0.3)

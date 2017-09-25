@@ -30,29 +30,7 @@ class CrackShader(MasterShader):
         self._nodes['Image Texture'].name = 'normalcrack' #normal crack
         self._nodes['normalcrack'].location = [-600, -900]
 
-        generated_maps = []
-        # generate crack maps
-        generated_maps[0:2] = (generate_fractal_cracks(self.resolution, 7))
-        # order is: albedo, roughness, normals
-        # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
-        # for all other maps add an alpha channel that is filled with ones
-        for i in range(0, len(generated_maps)):
-            # last shape index is amount of color channels
-            if generated_maps[i].shape[-1] != 4:
-                tmp = np.zeros((generated_maps[i].shape[0], generated_maps[i].shape[1], 4)) #place-holder
-                tmp[:,:,0:3] = generated_maps[i] # copy old 3 channels
-                tmp[:,:,3] = 1 # fill 4. alpha channel
-                generated_maps[i] = tmp # copy back
-
-        # initialize empty texture structures of corresponding size
-        imgT_albedo = bpy.data.images.new("albedo_image", width=self.resolution, height=self.resolution)
-        imgT_roughness = bpy.data.images.new("roughness_image", width=self.resolution, height=self.resolution)
-        imgT_normals = bpy.data.images.new("normals_image", width=self.resolution, height=self.resolution)
-
-        # flatten the arrays and assign them to the place-holder textures
-        imgT_albedo.pixels = generated_maps[0].flatten().tolist()
-        imgT_roughness.pixels = generated_maps[1].flatten().tolist()
-        imgT_normals.pixels = generated_maps[2].flatten().tolist()
+        imgT_albedo, imgT_roughness, imgT_normals = self._generateFractalCrackMaps();
 
         # feed new texture into appropriate nodes
         self._nodes['albedocrack'].image = imgT_albedo
@@ -89,3 +67,79 @@ class CrackShader(MasterShader):
         self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
         self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['Material Output'].inputs['Displacement'])
         self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['albedomix'].inputs['Color1'])
+
+
+    def _generateFractalCrackMaps(self):
+        generated_maps = []
+        # generate crack maps
+        generated_maps[0:2] = (generate_fractal_cracks(self.resolution, 7))
+        # order is: albedo, roughness, normals
+        # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
+        # for all other maps add an alpha channel that is filled with ones
+        for i in range(0, len(generated_maps)):
+            # last shape index is amount of color channels
+            if generated_maps[i].shape[-1] != 4:
+                tmp = np.zeros((generated_maps[i].shape[0], generated_maps[i].shape[1], 4)) #place-holder
+                tmp[:,:,0:3] = generated_maps[i] # copy old 3 channels
+                tmp[:,:,3] = 1 # fill 4. alpha channel
+                generated_maps[i] = tmp # copy back
+
+        # initialize empty texture structures of corresponding size
+        imgT_albedo = bpy.data.images.new("albedo_image", width=self.resolution, height=self.resolution)
+        imgT_roughness = bpy.data.images.new("roughness_image", width=self.resolution, height=self.resolution)
+        imgT_normals = bpy.data.images.new("normals_image", width=self.resolution, height=self.resolution)
+
+        # flatten the arrays and assign them to the place-holder textures
+        imgT_albedo.pixels = generated_maps[0].flatten().tolist()
+        imgT_roughness.pixels = generated_maps[1].flatten().tolist()
+        imgT_normals.pixels = generated_maps[2].flatten().tolist()
+
+        return imgT_albedo, imgT_roughness, imgT_normals;
+
+    def sampleCrack(self):
+        imgT_albedo, imgT_roughness, imgT_normals = self._generateFractalCrackMaps();
+
+        # feed new texture into appropriate nodes
+        self._nodes['albedocrack'].image = imgT_albedo
+        self._nodes['roughnesscrack'].image = imgT_roughness
+        self._nodes['normalcrack'].image = imgT_normals
+
+
+    def setShaderModeGT(self):
+        self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['albedocrack'].outputs['Color'])
+        self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'], self._nodes['Material Output'].inputs['Surface'])
+
+        # remove displacement links
+        for l in self._nodes['Material Output'].inputs['Displacement'].links:
+            self._nodetree.links.remove(l)
+
+    def setShaderModeNormalMap(self):
+        self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['albedocrack'].outputs['Color'])
+        self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'], self._nodes['Material Output'].inputs['Surface'])
+
+        # remove displacement links
+        for l in self._nodes['Material Output'].inputs['Displacement'].links:
+            self._nodetree.links.remove(l)
+
+        self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['normalmix'].outputs['Color'])
+
+    def setShaderModeColor(self):
+        self._nodetree.links.new(self._nodes['albedomix'].outputs['Color'], self._nodes['basebsdf'].inputs['Color'])
+        self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
+        self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['Material Output'].inputs['Displacement'])
+        self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['albedomix'].inputs['Color1'])
+
+        # remove surface links
+        for l in self._nodes["Material Output"].inputs["Surface"].links:
+            self._nodetree.links.remove(l);
+
+        self._nodetree.links.new(self._nodes['mixbasespec'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+
+    #Override(MasterShader)
+    def sampleTexture(self):
+        self._sampleAlbedo();
+        self._sampleLocationParameters();
+        self.sampleCrack();
+
+        self._loadParametersToSamplingNodes();
+
