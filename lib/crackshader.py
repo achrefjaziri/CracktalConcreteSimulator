@@ -96,7 +96,7 @@ class CrackShader(MasterShader):
 
         return imgT_albedo, imgT_roughness, imgT_normals;
 
-    def sampleCrack(self):
+    def _sampleCrack(self):
         imgT_albedo, imgT_roughness, imgT_normals = self._generateFractalCrackMaps();
 
         # feed new texture into appropriate nodes
@@ -124,22 +124,30 @@ class CrackShader(MasterShader):
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['normalmix'].outputs['Color'])
 
     def setShaderModeColor(self):
+        # link crack and original map nodes to mixrgb
+        self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['albedomix'].inputs[1])
+        self._nodetree.links.new(self._nodes['albedocrack'].outputs['Color'], self._nodes['albedomix'].inputs[2])
+        self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'], self._nodes['roughnessmix'].inputs[1])
+        self._nodetree.links.new(self._nodes['roughnesscrack'].outputs['Color'], self._nodes['roughnessmix'].inputs[2])
+        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmix'].inputs[1])
+        self._nodetree.links.new(self._nodes['normalcrack'].outputs['Color'], self._nodes['normalmix'].inputs[2])
+
         self._nodetree.links.new(self._nodes['albedomix'].outputs['Color'], self._nodes['basebsdf'].inputs['Color'])
         self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
         self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['Material Output'].inputs['Displacement'])
         self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['albedomix'].inputs['Color1'])
 
-        # remove surface links
-        for l in self._nodes["Material Output"].inputs["Surface"].links:
-            self._nodetree.links.remove(l);
+        # add appropriate factors for scaling mixrgb nodes
+        self._nodetree.links.new(self._nodes['albedocrack'].outputs['Alpha'], self._nodes['albedomix'].inputs[0])
 
         self._nodetree.links.new(self._nodes['mixbasespec'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+
 
     #Override(MasterShader)
     def sampleTexture(self):
         self._sampleAlbedo();
         self._sampleLocationParameters();
-        self.sampleCrack();
+        self._sampleCrack();
 
         self._loadParametersToSamplingNodes();
 

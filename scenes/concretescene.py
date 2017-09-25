@@ -148,7 +148,7 @@ class ConcreteScene(Scene):
     def update(self):
         for key in self.shaderDict:
             try:
-                pass;
-                #self.shaderDict[key].rebuildShader();
+                for key in self.shaderDict:
+                    self.shaderDict[key].sampleTexture();
             except Exception:
                 pass;
