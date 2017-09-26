@@ -60,7 +60,7 @@ class ConcreteScene(Scene):
         # The default name of lamps is 'Lamp' as described in the above comments.
 
         # set color and strength value of sun using nodes.
-        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
+        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0] # these are no good color values for a sun!
         bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
 
 
@@ -90,12 +90,6 @@ class ConcreteScene(Scene):
         bpy.data.objects['Plane'].active_material = bpy.data.materials[shadername];
         print("Done...");
 
-        # TODO: sample shader image sources!
-
-        print("Sample shader values");
-        shader.sampleTexture();
-        print("Done...");
-        
         print("Apply shader to obj mesh");
         shader.applyTo("Plane");
         print("Done...");

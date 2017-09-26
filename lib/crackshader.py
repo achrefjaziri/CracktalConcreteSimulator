@@ -148,6 +148,7 @@ class CrackShader(MasterShader):
         self._sampleAlbedo();
         self._sampleLocationParameters();
         self._sampleCrack();
-
+        
+        self._loadImagesToTextureNodes();
         self._loadParametersToSamplingNodes();
 

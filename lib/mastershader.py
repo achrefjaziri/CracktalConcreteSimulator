@@ -2,6 +2,7 @@ import bpy
 import colorsys
 import math
 import numpy as np
+import time
 
 class MasterShader():
 
@@ -70,7 +71,7 @@ class MasterShader():
         self._nodes['Image Texture'].name = 'normalconcrete' #normal concrete
         self._nodes['normalconcrete'].location = [-600, -600]
 
-        self._loadImagesToTextureNodes();
+        #self._loadImagesToTextureNodes();
 
         # random albedo and other map rgb and mix nodes for random sampling
         self._nodes.new('ShaderNodeRGB')
@@ -111,7 +112,7 @@ class MasterShader():
         self._nodetree.links.new(self._nodes['addtranslation'].inputs[0], self._nodes['samplingtranslationrgb'].outputs['Color'])
         self._nodetree.links.new(self._nodes['addtranslation'].inputs[1], self._nodes['texcoord1'].outputs['UV'])
 
-        self._loadParametersToSamplingNodes();
+        #self._loadParametersToSamplingNodes();
 
         self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['basebsdf'].inputs['Color'])
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
@@ -122,8 +123,10 @@ class MasterShader():
         self._nodes['Emission'].name = 'emit1'
         self._nodes['emit1'].location = [450, -100]
 
+
     def setShaderModeGT(self):
         pass;
+
 
     def setShaderModeNormalMap(self):
         nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
@@ -131,12 +134,14 @@ class MasterShader():
         for l in nodes['Material Output'].inputs['Displacement'].links:
             nodetree.links.remove(l)
 
+
     def setShaderModeColor(self):
         self._nodetree.links.new(self._nodes['samplingalbedomix'].outputs['Color'], self._nodes['basebsdf'].inputs['Color'])
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'], self._nodes['specbsdf'].inputs['Roughness'])
         self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['Material Output'].inputs['Displacement'])
         
         self._nodetree.links.new(self._nodes['mixbasespec'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+
 
     def _loadImagesToTextureNodes(self):
         # ALBEDO MAP
@@ -182,11 +187,14 @@ class MasterShader():
         self.roughnessTexPath = roughnessPath;
         self.normalTexPath = normalPath;
 
+
     def sampleTexture(self):
         self._sampleAlbedo();
         self._sampleLocationParameters();
 
+        self._loadImagesToTextureNodes();
         self._loadParametersToSamplingNodes();
+
 
     def _sampleAlbedo(self):
         hval = np.random.normal(0.5, 0.3)
@@ -197,6 +205,7 @@ class MasterShader():
         vval.fill(0.529)
 
         self.albedovals = [hval, sval, vval];
+
 
     def _sampleLocationParameters(self):
         # location sampling has to be between 0 and 1 because we are using RGB mixer node for translation

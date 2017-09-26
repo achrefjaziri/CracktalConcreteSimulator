@@ -9,17 +9,6 @@ import random
 
 import cv2
 
-# Find out if system has GPU and if it has at least one GPU, it is going to be set
-# Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
-# this behavior you can modify the GPUs index to "use=False": 
-# bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
-
-#Use flag for deep learning to know whether system has a GPU
-UseGPU = False
-if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) > 0:
-    bpy.context.scene.cycles.device = 'GPU'
-    UseGPU = True
-
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
     sys.path.append(dir)
@@ -34,6 +23,17 @@ from scenes.concretescene import ConcreteScene
 
 from lib.rendermanager import RenderManager
 
+# Find out if system has GPU and if it has at least one GPU, it is going to be set
+# Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
+# this behavior you can modify the GPUs index to "use=False": 
+# bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
+
+#Use flag for deep learning to know whether system has a GPU
+UseGPU = False
+if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) > 0:
+    bpy.context.scene.cycles.device = 'GPU'
+    UseGPU = True
+
 
 def run(num_images, s, path='tmp/tmp.png', f=1):
     for i in range(num_images):
@@ -44,8 +44,14 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
             cracked = crack[1]
         # randomly choose which concrete mapset to use
         concrete = random.randint(1,concretemaps)
+
+        # sample textures
+        albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
+        roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
+        normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
        
-        print("Update Scene...");
+        print("Load new texture to shader...");
+        scene.shaderDict["concrete"].loadTexture(albedoPath, roughnessPath, normalPath);
         scene.update();
         print("Done...");
 
@@ -59,8 +65,12 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
             gt_string = os.path.join('tmp/gt' + str(i) + '.png')
             normal_string = os.path.join('tmp/normal' + str(i) + '.png')
             misc.imsave(res_string, renderManager.result_imgs[-1])
+            print("image save done...")
             misc.imsave(normal_string, renderManager.result_normals[-1])
+            print("normal map save done...")
             misc.imsave(gt_string, renderManager.result_gt[-1])
+            print("ground truth save done...")
+            print("");
 
         if i > 0: # additional check as 0 % anything = 0
             if i % args.batch_size == 0:
@@ -87,81 +97,83 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
                 del result_gt[:]
 
 
-if __name__ == "__main__":
-    # parse command line arguments
-    args = parse(sys.argv)
-    print("Command line options:")
-    for arg in vars(args):
-        print(arg, getattr(args, arg))
+##################
+##### PROGRAM
+##################
 
-    # Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
-    crack = [0,1]
+# parse command line arguments
+args = parse(sys.argv)
+print("Command line options:")
+for arg in vars(args):
+    print(arg, getattr(args, arg))
 
+# Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
+crack = [0,1]
 
-    # concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
-    concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
+# concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
+concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
 
-    # if directory not found download from online for concrete maps
-    if os.path.isdir("concretedictionary"):
-        print ("Concrete dictionary maps folder found")
+# if directory not found download from online for concrete maps
+if os.path.isdir("concretedictionary"):
+    print ("Concrete dictionary maps folder found")
+else:
+    flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
+    flagres2 = os.system('unzip concretedictionary.zip')
+    flagres3 = os.system('rm concretedictionary.zip')
+
+print("Base texture maps have been loaded...");
+# only initialize a deep network if the save option to generate
+# TODO: Deepnet stuff desperately needs a refactor
+if args.deep_learning:
+    print("Importing deep learning modules...");
+    import torch
+    import torch.nn.parallel
+    import torch.backends.cudnn as cudnn
+    import lib.deep_architectures
+    from lib.train import train, validate
+
+    # create deep network model
+    net_init_method = getattr(lib.deep_architectures, args.architecture)
+    model = net_init_method()
+    if UseGPU:
+        model = torch.nn.DataParallel(model).cuda()
+
+    print("Neural Network architecture: \n", model)
+    # CUDNN
+    cudnn.benchmark = True
+
+    if UseGPU:
+        criterion = torch.nn.MSELoss().cuda()
     else:
-        flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
-        flagres2 = os.system('unzip concretedictionary.zip')
-        flagres3 = os.system('rm concretedictionary.zip')
+        criterion = torch.nn.MSELoss()
 
-    print("Base texture maps have been loaded...");
-    # only initialize a deep network if the save option to generate
-    # TODO: Deepnet stuff desperately needs a refactor
-    if args.deep_learning:
-        print("Importing deep learning modules...");
-        import torch
-        import torch.nn.parallel
-        import torch.backends.cudnn as cudnn
-        import lib.deep_architectures
-        from lib.train import train, validate
+    optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
+                                momentum=args.momentum,
+                                weight_decay=args.weight_decay)
 
-        # create deep network model
-        net_init_method = getattr(lib.deep_architectures, args.architecture)
-        model = net_init_method()
-        if UseGPU:
-            model = torch.nn.DataParallel(model).cuda()
+#ensure that cycles engine is set for the basic scene.
+#predefined object name for scene is 'Scene'. Also can be accesed by index 0.
+print("Setting rendering engine to Cycles render")
+bpy.data.scenes['Scene'].render.engine = 'CYCLES'
+print("Done...");
 
-        print("Neural Network architecture: \n", model)
-        # CUDNN
-        cudnn.benchmark = True
+# check if mode is object mode else set it to object mode
+print("Selecting object mode...");
+checkmode = bpy.context.active_object.mode
+if checkmode != 'OBJECT':
+    bpy.ops.object.mode_set(mode='OBJECT')
+print("Done...");
 
-        if UseGPU:
-            criterion = torch.nn.MSELoss().cuda()
-        else:
-            criterion = torch.nn.MSELoss()
+# set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
+print("Setting up scene...");
+scene = ConcreteScene(args.resolution);
+print("Done...");
 
-        optimizer = torch.optim.SGD(model.parameters(), args.learning_rate,
-                                    momentum=args.momentum,
-                                    weight_decay=args.weight_decay)
+print("Init render manager...");
+renderManager = RenderManager(path="tmp/tmp.png", frames=1, samples=args.samples, tilesize=args.tile_size, resolution=args.resolution, cracked=1);
+renderManager.setScene(scene);
+print("Done...");
 
-    #ensure that cycles engine is set for the basic scene.
-    #predefined object name for scene is 'Scene'. Also can be accesed by index 0.
-    print("Setting rendering engine to Cycles render")
-    bpy.data.scenes['Scene'].render.engine = 'CYCLES'
-    print("Done...");
-
-    # check if mode is object mode else set it to object mode
-    print("Selecting object mode...");
-    checkmode = bpy.context.active_object.mode
-    if checkmode != 'OBJECT':
-        bpy.ops.object.mode_set(mode='OBJECT')
-    print("Done...");
-
-    # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
-    print("Setting up scene...");
-    scene = ConcreteScene(args.resolution);
-    print("Done...");
-
-    print("Init render manager...");
-    renderManager = RenderManager(path="tmp/tmp.png", frames=1, samples=args.samples, tilesize=args.tile_size, resolution=args.resolution, cracked=1);
-    renderManager.setScene(scene);
-    print("Done...");
-
-    print("Rendering...")
-    run(args.num_images, args.samples, path='tmp/tmp.png', f=1)
-    print("Done...");
+print("Rendering...")
+run(args.num_images, args.samples, path='tmp/tmp.png', f=1)
+print("Done...");
