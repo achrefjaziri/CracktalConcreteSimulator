@@ -32,141 +32,10 @@ from lib.crackshader import CrackShader
 
 from scenes.concretescene import ConcreteScene
 
-
-def render(path, f, s, cracked):
-    bpy.data.scenes['Scene'].frame_end = f
-    bpy.data.scenes['Scene'].render.filepath = path
-    bpy.data.scenes['Scene'].cycles.samples = s
-    bpy.data.scenes['Scene'].render.resolution_x = args.resolution
-    bpy.data.scenes['Scene'].render.resolution_y = args.resolution
-    bpy.data.scenes['Scene'].render.resolution_percentage = 100
-    # before rendering, set the sceen camera to the camera that you created
-    bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
-
-    #set render tile sizes
-    bpy.data.scenes['Scene'].render.tile_x = args.tile_size
-    bpy.data.scenes['Scene'].render.tile_y = args.tile_size
-
-    render_img(filepath=path, frames=f, samples=s)
-    # render groundtruth
-    rendergt(filepath=path, frames=f, samples=s, crackflag=cracked)
-    # render normalmap
-    rendernp(filepath=path, frames=f, samples=s, crackflag=cracked)
+from lib.rendermanager import RenderManager
 
 
-def render_img(filepath, frames, samples):
-    # Commented code can later potentially be used to get the result directly from the CompositorLayer 
-    # in principle this works fine, however it needs a GUI to work....
-    # and pipe convert and reshape it into a numpy array
-    # switch on nodes
-    '''
-    bpy.context.scene.use_nodes = True
-    tree = bpy.context.scene.node_tree
-    links = tree.links
-    
-    # create input render layer node
-    rl = tree.nodes.new('CompositorNodeRLayers')
-    rl.location = 185, 285
-    
-    # create output node
-    v = tree.nodes.new('CompositorNodeViewer')
-    v.name = 'ImageViewerNode'
-    v.location = 750, 210
-    v.use_alpha = False
-
-    # create another output node for surface normals
-    n = tree.nodes.new('CompositorNodeViewer')
-    n.location = 750, 390
-    n.use_alpha = False
-    
-    # for the normals
-    bpy.data.scenes['Scene'].render.layers["RenderLayer"].use_pass_normal = True
-
-    # Links
-    links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input
-    links.new(rl.outputs['Normal'], n.inputs[0])  # link Normal output to Viewer input
-    '''
-
-    scene.shaderDict["concrete"].setShaderModeColor();
-
-    bpy.ops.render.render(write_still=True)
-    # as it seems impossible to access rendered image directly due to some blender internal
-    # buffer freeing issues, we save the result to a tmp image and load it again.
-    res = misc.imread(filepath)
-    # if used for deep learning, down-sample and exclude alpha channel before feeding into list
-    if args.deep_learning:
-        res = misc.imresize(res, size=(args.patch_size,args.patch_size),  interp='nearest').astype(float)/255 #imresize automatically converts to uint8
-        res = res[:,:,0:3]
-    result_imgs.append(res)
-
-    '''
-    # get viewer pixels
-    img_pixels = bpy.data.images['Viewer Node'].pixels
-    normal_pixels = bpy.data.images['Viewer Node'].pixels
-
-    # copy buffer to numpy array for faster manipulation
-    # size is always width * height * 4 (rgba)
-    arr = np.array(img_pixels)
-    arr = arr.reshape((resolution, resolution, 4))
-    misc.imsave('outputfile.png', arr)
-
-    arr = np.array(normal_pixels)
-    arr = arr.reshape((resolution, resolution, 4))
-    misc.imsave('normaloutputfile.png', arr)
-    '''
-
-
-def rendergt(filepath, frames, samples, crackflag):
-    if crackflag:
-        scene.shaderDict["concrete"].setShaderModeGT();
-
-        bpy.ops.render.render(write_still=True)
-        gt = misc.imread(filepath)
-        # binarize the ground-truth map
-        gt = gt > 0
-        gt = gt.astype(int)
-        misc.imsave(filepath, gt)
-
-        # if used for deep learning, down-sample and exclude alpha channel before feeding into list
-        if args.deep_learning:
-            gt = misc.imread(filepath)
-            gt = misc.imresize(gt, size=(args.patch_size, args.patch_size),  interp='nearest').astype(float) / 255  # imresize automatically converts to uint8
-            gt = gt[:, :, 0:3]
-        result_gt.append(gt)
-    else:
-        gt = np.zeros((args.resolution, args.resolution, 3))
-        if args.deep_learning:
-            gt = misc.imresize(gt, size=(args.patch_size, args.patch_size),  interp='nearest').astype(
-                float) / 255  # imresize automatically converts to uint8
-        result_gt.append(gt)
-
-def rendernp(filepath, frames, samples, crackflag):
-    if crackflag:
-        scene.shaderDict["concrete"].setShaderModeNormalMap();
-    else:
-        pass;
-        #nodes.new('ShaderNodeEmission')
-        #nodes['Emission'].name = 'emit1'
-        #nodes['emit1'].location = [450, -100]
-        #nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
-        #nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalconcrete'].outputs['Color'])
-        #for l in nodes['Material Output'].inputs['Displacement'].links:
-        #    nodetree.links.remove(l)
-
-    # render call
-    bpy.ops.render.render(write_still=True)
-
-    result_normals.append(misc.imread(filepath))
-
-    res = misc.imread(filepath)
-    # if used for deep learning, down-sample and exclude alpha channel before feeding into list
-    if args.deep_learning:
-        res = misc.imresize(res, size=(args.patch_size, args.patch_size), interp='nearest').astype(float) / 255  # imresize automatically converts to uint8
-        res = res[:, :, 0:3]
-    result_normals.append(res)
-
-
-def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
+def run(num_images, s, path='tmp/tmp.png', f=1):
     for i in range(num_images):
         # alternatively choose crack or noncrack structure
         if i % 2 == 0:
@@ -181,7 +50,7 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
         print("Done...");
 
         print("Rendering...");
-        render(path, f, s, cracked)
+        renderManager.render();
         print("Done...");
 
         # save images to temporary folder if required for viewing later on
@@ -189,9 +58,9 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
             res_string = os.path.join('tmp/render'+str(i)+'.png')
             gt_string = os.path.join('tmp/gt' + str(i) + '.png')
             normal_string = os.path.join('tmp/normal' + str(i) + '.png')
-            misc.imsave(res_string,result_imgs[len(result_imgs)-1])
-            misc.imsave(normal_string, result_normals[len(result_normals) - 1])
-            misc.imsave(gt_string, result_gt[len(result_gt) - 1])
+            misc.imsave(res_string, renderManager.result_imgs[-1])
+            misc.imsave(normal_string, renderManager.result_normals[-1])
+            misc.imsave(gt_string, renderManager.result_gt[-1])
 
         if i > 0: # additional check as 0 % anything = 0
             if i % args.batch_size == 0:
@@ -228,10 +97,6 @@ if __name__ == "__main__":
     # Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
     crack = [0,1]
 
-    # Three place-holder lists for rendered image, normal map and ground-truth
-    result_imgs = []
-    result_normals = []
-    result_gt = []
 
     # concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
     concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
@@ -245,7 +110,6 @@ if __name__ == "__main__":
         flagres3 = os.system('rm concretedictionary.zip')
 
     print("Base texture maps have been loaded...");
-
     # only initialize a deep network if the save option to generate
     # TODO: Deepnet stuff desperately needs a refactor
     if args.deep_learning:
@@ -293,6 +157,11 @@ if __name__ == "__main__":
     scene = ConcreteScene(args.resolution);
     print("Done...");
 
-    print("Do sampling render...");
-    sampleandrender(args.num_images, args.samples, path='tmp/tmp.png', f=1)
+    print("Init render manager...");
+    renderManager = RenderManager(path="tmp/tmp.png", frames=1, samples=args.samples, tilesize=args.tile_size, resolution=args.resolution, cracked=1);
+    renderManager.setScene(scene);
+    print("Done...");
+
+    print("Rendering...")
+    run(args.num_images, args.samples, path='tmp/tmp.png', f=1)
     print("Done...");
