@@ -4,4 +4,4 @@ tmp/*.png
 .idea/*
 
 
-.*pyc
+*.pyc
