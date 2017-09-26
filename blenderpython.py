@@ -33,34 +33,6 @@ from lib.crackshader import CrackShader
 from scenes.concretescene import ConcreteScene
 
 
-#def resetSceneToEmpty():
-#    check = bpy.data.objects is not None
-#    # remove pre-existing objects from blender
-#    if check == True:
-#        for object in bpy.data.objects:
-#            object.select = True
-#            bpy.ops.object.delete()
-#            # clear mesh and material data. removing objects alone is not necessary
-#            for mesh in bpy.data.meshes:
-#                bpy.data.meshes.remove(mesh, do_unlink=True)
-#            for material in bpy.data.materials:
-#                bpy.data.materials.remove(material, do_unlink=True)
-#            for camera in bpy.data.cameras:
-#                bpy.data.cameras.remove(camera, do_unlink=True)
-#            for lamp in bpy.data.lamps:
-#                bpy.data.lamps.remove(lamp, do_unlink=True)
-
-
-#def setUpScene():
-#    print("Setting up ConcreteScene");
-#    scene = ConcreteScene(args.resolution);
-#    print("Done...");
-
-
-def updateScene():
-    pass;
-
-
 def render(path, f, s, cracked):
     bpy.data.scenes['Scene'].frame_end = f
     bpy.data.scenes['Scene'].render.filepath = path
@@ -146,19 +118,6 @@ def render_img(filepath, frames, samples):
 
 def rendergt(filepath, frames, samples, crackflag):
     if crackflag:
-        #nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
-        #nodes = bpy.data.materials['concrete'].node_tree.nodes
-        #nodes.new('ShaderNodeEmission')
-        #nodes['Emission'].name = 'emit1'
-        #nodes['emit1'].location = [450, -100]
-        #nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['albedocrack'].outputs['Color'])
-        #nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
-
-        # remove displacement links
-        #for l in nodes['Material Output'].inputs['Displacement'].links:
-        #    nodetree.links.remove(l)
-        # render call
-
         scene.shaderDict["concrete"].setShaderModeGT();
 
         bpy.ops.render.render(write_still=True)
@@ -182,10 +141,7 @@ def rendergt(filepath, frames, samples, crackflag):
         result_gt.append(gt)
 
 def rendernp(filepath, frames, samples, crackflag):
-    #nodetree = bpy.data.materials['concrete'].node_tree  # required for linking
-    #nodes = bpy.data.materials['concrete'].node_tree.nodes
     if crackflag:
-        #nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalmix'].outputs['Color'])
         scene.shaderDict["concrete"].setShaderModeNormalMap();
     else:
         pass;
@@ -219,15 +175,7 @@ def sampleandrender(num_images, s, path='tmp/tmp.png', f=1):
             cracked = crack[1]
         # randomly choose which concrete mapset to use
         concrete = random.randint(1,concretemaps)
-        # remove existing objects present in the scene
-        #print("remove existing objects...");
-        #resetSceneToEmpty()
-        #print("Done...")
-        
-        #print("Setting up scene...");
-        ##setUpScene();
-        #print("Done...");
-
+       
         print("Update Scene...");
         scene.update();
         print("Done...");
