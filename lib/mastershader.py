@@ -129,10 +129,10 @@ class MasterShader():
 
 
     def setShaderModeNormalMap(self):
-        nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
-        nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalconcrete'].outputs['Color'])
-        for l in nodes['Material Output'].inputs['Displacement'].links:
-            nodetree.links.remove(l)
+        self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'], self._nodes['Material Output'].inputs['Surface'])
+        self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['normalconcrete'].outputs['Color'])
+        for l in self._nodes['Material Output'].inputs['Displacement'].links:
+            self._nodetree.links.remove(l)
 
 
     def setShaderModeColor(self):

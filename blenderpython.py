@@ -166,7 +166,7 @@ print("Done...");
 
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
 print("Setting up scene...");
-scene = ConcreteScene(args.resolution);
+scene = ConcreteScene(args.resolution, args.crack);
 print("Done...");
 
 print("Init render manager...");

@@ -7,12 +7,15 @@ import colorsys
 
 from lib.scene import Scene
 from lib.crackshader import CrackShader
+from lib.mastershader import MasterShader
 
 class ConcreteScene(Scene):
-    def __init__(self, resolution):
+    def __init__(self, resolution, isRenderCracks):
         # attributes of the scene used in setup need to be called befor parent init!
         # otherwise they are not known to the overrinding function!
         self.resolution = resolution;
+
+        self.cracked = isRenderCracks;
         
         super(ConcreteScene, self).__init__();
 
@@ -74,28 +77,28 @@ class ConcreteScene(Scene):
         bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
     #Override(Scene)
-    def _setUpShader(self, albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1, cracked=1):
+    def _setUpShader(self, albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1):
         albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
         roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
         normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
         
         
-        print("Init crackshader");
-        shadername = "concrete";
-        shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, self.resolution);
-        self.shaderDict[shadername] = shader;
-        print("Done...");
+        #print("Init crackshader");
+        #shadername = "concrete";
+        #shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, self.resolution);
+        #self.shaderDict[shadername] = shader;
+        #print("Done...");
 
-        print("Link shader to plane object");
-        bpy.data.objects['Plane'].active_material = bpy.data.materials[shadername];
-        print("Done...");
+        #print("Link shader to plane object");
+        #bpy.data.objects['Plane'].active_material = bpy.data.materials[shadername];
+        #print("Done...");
 
-        print("Apply shader to obj mesh");
-        shader.applyTo("Plane");
-        print("Done...");
+        #print("Apply shader to obj mesh");
+        #shader.applyTo("Plane");
+        #print("Done...");
 
-        """
-        if(not cracked):
+        
+        if(not self.cracked):
             print("Init mastershader");
             shadername = "concrete";
             shader = MasterShader(shadername, albedoPath, roughnessPath, normalPath);
@@ -116,9 +119,9 @@ class ConcreteScene(Scene):
             shader.applyTo("Plane");
             print("Done...");
             
-        elif(cracked):
+        elif(self.cracked):
             print("Init crackshader");
-            shadername = "crackshader";
+            shadername = "concrete";
             shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, self.resolution);
             self.shaderDict[shadername] = shader;
             print("Done...");
@@ -136,7 +139,7 @@ class ConcreteScene(Scene):
             print("Apply shader to obj mesh");
             shader.applyTo("Plane");
             print("Done...");
-        """
+        
 
     #Override(Scene)
     def update(self):

@@ -20,6 +20,7 @@ class CrackShader(MasterShader):
 
 
     def _setup(self):
+        print("Crackshader Setup");
         self._nodes.new('ShaderNodeTexImage')
         self._nodes['Image Texture'].name = 'albedocrack' #albedo crack
         self._nodes['albedocrack'].location = [-600, 300]
