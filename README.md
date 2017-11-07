@@ -12,7 +12,7 @@ Running the code:
 
 The concrete dictionary folder which contains all the concrete maps will be downloaded from dropbox link if you do not already have it in blenderpython folder. The python script uses console commands wget and unzip to download and unzip the required folder. Install 'wget' and 'unzip' using command line prompt if you do not already have them in your linux system.
 
-If you do not want to download the google drive file using the python script, here is the google drive link:
+If you do not want to download the dropbox file using the python script, here is the dropbox link:
 [Drop box link for concrete maps](https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1)
 
 Download and unzip it inside blenderpython folder. You should see concretedictionary folder after you unzip the downloaded file.
