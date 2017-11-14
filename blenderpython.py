@@ -77,8 +77,8 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
                 # feed the deep network
                 if args.deep_learning:
                     # convert the list into numpy arrays and convert from float64 to float32
-                    tmp_imgs = np.array(result_imgs).astype(np.float32)
-                    tmp_gts = np.array(result_gt).astype(np.float32)
+                    tmp_imgs = np.array(renderManager.result_imgs).astype(np.float32)
+                    tmp_gts = np.array(renderManager.result_gt).astype(np.float32)
 
                     # torch expects image size[1] to be the channels
                     tmp_imgs = np.transpose(tmp_imgs, (0, 3, 1, 2))
@@ -92,9 +92,9 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
                     train(image_tensor, gt_tensor, model, criterion, optimizer)
 
                 # clear the lists of stored results
-                del result_imgs[:]
-                del result_normals[:]
-                del result_gt[:]
+                del renderManager.result_imgs[:]
+                del renderManager.result_normals[:]
+                del renderManager.result_gt[:]
 
 
 ##################
@@ -108,7 +108,7 @@ for arg in vars(args):
     print(arg, getattr(args, arg))
 
 # Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
-crack = [0,1]
+crack = [0, 1]
 
 # concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
 concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
