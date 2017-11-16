@@ -1,25 +1,13 @@
 import bpy
-"""
-import colorsys
-import math
-import numpy as np
-import time
-"""
 
-class MasterShader():
 
-    def __init__(self, materialName, albedoTexPath, roughnessTexPath, normalTexPath,
-                 albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1]):
-        self.name = materialName
-        self.albedoTexPath = albedoTexPath
-        self.roughnessTexPath = roughnessTexPath
-        self.normalTexPath = normalTexPath
+class MasterShader:
 
-        self.scalevals = scaleval
-        self.locationvals = locationval
-        self.rotationvals = rotationval
-
-        self.albedovals = albedoval
+    def __init__(self, material_name, albedo_texture_path, roughness_texture_path, normal_texture_path):
+        self.name = material_name
+        self.albedoTexPath = albedo_texture_path
+        self.roughnessTexPath = roughness_texture_path
+        self.normalTexPath = normal_texture_path
 
         self._nodetree = None
         self._nodes = None
@@ -68,17 +56,17 @@ class MasterShader():
         self._nodes['Emission'].name = 'emit1'
         self._nodes['emit1'].location = [450, -100]
 
-    def setShaderModeGT(self):
+    def set_shader_mode_gt(self):
         pass
 
-    def setShaderModeNormalMap(self):
+    def set_shader_mode_normal(self):
         self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'],
                                  self._nodes['Material Output'].inputs['Surface'])
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['normalconcrete'].outputs['Color'])
         for l in self._nodes['Material Output'].inputs['Displacement'].links:
             self._nodetree.links.remove(l)
 
-    def setShaderModeColor(self):
+    def set_shader_mode_color(self):
         self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
         self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['pbr'].inputs[0])
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'],
@@ -87,30 +75,32 @@ class MasterShader():
                                  self._nodes['normalmapconcrete'].inputs[1])
         self._nodetree.links.new(self._nodes['normalmapconcrete'].outputs[0], self._nodes['pbr'].inputs['Normal'])
 
-    def _loadImagesToTextureNodes(self):
-        # ALBEDO MAP
+    def _load_images_to_textures_nodes(self):
+        # albedo map
         bpy.data.images.load(filepath=self.albedoTexPath)
         self._nodes['albedoconcrete'].image = bpy.data.images[self.albedoTexPath.split("/")[-1]]
-        # ROUGHNESS MAP
+
+        # roughness map
         bpy.data.images.load(filepath=self.roughnessTexPath)
         self._nodes['roughnessconcrete'].image = bpy.data.images[self.roughnessTexPath.split("/")[-1]]
-        # NORMAL MAP
+
+        # normal map
         bpy.data.images.load(filepath=self.normalTexPath)
         self._nodes['normalconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
-    def applyTo(self, blenderObjName):
-        currObj = bpy.context.scene.objects[blenderObjName]
-        currObj.select = True
+    def apply_to_blender_object(self, blender_obj):
+        curr_obj = bpy.context.scene.objects[blender_obj]
+        curr_obj.select = True
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.uv.unwrap()
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
 
-    def loadTexture(self, albedoPath, roughnessPath, normalPath):
-        self.albedoTexPath = albedoPath
-        self.roughnessTexPath = roughnessPath
-        self.normalTexPath = normalPath
+    def load_texture(self, albedo_path, roughness_path, normal_path):
+        self.albedoTexPath = albedo_path
+        self.roughnessTexPath = roughness_path
+        self.normalTexPath = normal_path
 
-    def sampleTexture(self):
-        self._loadImagesToTextureNodes()
+    def sample_texture(self):
+        self._load_images_to_textures_nodes()

@@ -104,7 +104,7 @@ class CrackShader(MasterShader):
         self._nodes['normalcrack'].image = imgT_normals
 
 
-    def setShaderModeGT(self):
+    def set_shader_mode_gt(self):
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['albedocrack'].outputs['Color'])
         self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'], self._nodes['Material Output'].inputs['Surface'])
 
@@ -112,7 +112,7 @@ class CrackShader(MasterShader):
         for l in self._nodes['Material Output'].inputs['Displacement'].links:
             self._nodetree.links.remove(l)
 
-    def setShaderModeNormalMap(self):
+    def set_shader_mode_normal(self):
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['albedocrack'].outputs['Color'])
         self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'], self._nodes['Material Output'].inputs['Surface'])
 
@@ -122,7 +122,7 @@ class CrackShader(MasterShader):
 
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['normalmix'].outputs['Color'])
 
-    def setShaderModeColor(self):
+    def set_shader_mode_color(self):
         # link crack and original map nodes to mixrgb
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'],
                                  self._nodes['roughnessmix'].inputs[1])
@@ -137,8 +137,8 @@ class CrackShader(MasterShader):
         self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
 
     #Override(MasterShader)
-    def sampleTexture(self):
+    def sample_texture(self):
         self._sampleCrack();
         
-        self._loadImagesToTextureNodes();
+        self._load_images_to_textures_nodes();
 

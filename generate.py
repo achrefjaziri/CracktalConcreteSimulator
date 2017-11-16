@@ -51,7 +51,7 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
        
         print("Load new texture to shader...");
-        scene.shaderDict["concrete"].loadTexture(albedoPath, roughnessPath, normalPath);
+        scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath);
         scene.update();
         print("Done...");
 

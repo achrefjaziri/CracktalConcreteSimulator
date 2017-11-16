@@ -82,7 +82,7 @@ class RenderManager():
         links.new(rl.outputs['Normal'], n.inputs[0])  # link Normal output to Viewer input
         '''
 
-        self.scene.shaderDict["concrete"].setShaderModeColor();
+        self.scene.shaderDict["concrete"].set_shader_mode_color();
 
         bpy.ops.render.render(write_still=True)
         # as it seems impossible to access rendered image directly due to some blender internal
@@ -112,7 +112,7 @@ class RenderManager():
 
     def rendergt(self, filepath, frames, samples, crackflag):
         if crackflag:
-            self.scene.shaderDict["concrete"].setShaderModeGT();
+            self.scene.shaderDict["concrete"].set_shader_mode_gt();
 
             bpy.ops.render.render(write_still=True)
             gt = misc.imread(filepath)
@@ -137,7 +137,7 @@ class RenderManager():
 
     def rendernp(self, filepath, frames, samples, crackflag):
         if crackflag:
-            self.scene.shaderDict["concrete"].setShaderModeNormalMap();
+            self.scene.shaderDict["concrete"].set_shader_mode_normal();
         else:
             pass;
             #nodes.new('ShaderNodeEmission')

@@ -116,11 +116,11 @@ class ConcreteScene(Scene):
             # TODO: sample shader image sources!
 
             print("Sample shader values");
-            shader.sampleTexture();
+            shader.sample_texture();
             print("Done...");
             
             print("Apply shader to obj mesh");
-            shader.applyTo("Plane");
+            shader.apply_to_blender_object("Plane");
             print("Done...");
             
         elif(self.cracked):
@@ -137,11 +137,11 @@ class ConcreteScene(Scene):
             # TODO: sample shader image sources!
 
             print("Sample shader values");
-            shader.sampleTexture();
+            shader.sample_texture();
             print("Done...");
             
             print("Apply shader to obj mesh");
-            shader.applyTo("Plane");
+            shader.apply_to_blender_object("Plane");
             print("Done...");
         
 
@@ -150,6 +150,6 @@ class ConcreteScene(Scene):
         for key in self.shaderDict:
             try:
                 for key in self.shaderDict:
-                    self.shaderDict[key].sampleTexture();
+                    self.shaderDict[key].sample_texture();
             except Exception:
                 pass;
