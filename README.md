@@ -28,6 +28,7 @@ Note that depending on your OS and Blender version the shortcut "pip" could not 
 * ```opencv-python```
 * ```numpy```
 * ```scipy```
+* ```pillow```
 
 ## Running the code:
 
