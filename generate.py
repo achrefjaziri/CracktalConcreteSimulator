@@ -43,7 +43,7 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         else:
             cracked = crack[1]
         # randomly choose which concrete mapset to use
-        concrete = random.randint(1,concretemaps)
+        concrete = random.randint(1,concretemaps-1)
 
         # sample textures
         albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
