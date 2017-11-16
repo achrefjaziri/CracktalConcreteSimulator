@@ -1,13 +1,9 @@
 import bpy
-import math
 import os
 import sys
-import numpy as np
-import colorsys
-from scipy import misc
 import random
-
-import cv2
+import numpy as np
+from scipy import misc
 
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
@@ -16,8 +12,6 @@ if not dir in sys.path:
 # import custom scripts for map generation
 from lib.fractalcracks import generate_fractal_cracks
 from lib.cmdparser import parse
-from lib.mastershader import MasterShader
-from lib.crackshader import CrackShader
 
 from scenes.concretescene import ConcreteScene
 

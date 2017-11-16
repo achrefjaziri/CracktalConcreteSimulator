@@ -13,14 +13,14 @@ class ConcreteScene(Scene):
     def __init__(self, resolution, isRenderCracks):
         # attributes of the scene used in setup need to be called befor parent init!
         # otherwise they are not known to the overrinding function!
-        self.resolution = resolution;
+        self.resolution = resolution
 
-        self.cracked = isRenderCracks;
+        self.cracked = isRenderCracks
         
-        super(ConcreteScene, self).__init__();
+        super(ConcreteScene, self).__init__()
 
     #Override(Scene)
-    def _setUpCamera(self):
+    def _setup_camera(self):
         # add camera
         bpy.ops.object.camera_add()
         # location of camera
@@ -40,7 +40,7 @@ class ConcreteScene(Scene):
         #bpy.ops.script.execute_preset(filepath="yourpathlocation")
 
     #Override(Scene)
-    def _setUpLighting(self):
+    def _setup_lighting(self):
         # add lamp
         bpy.ops.object.lamp_add(type='SUN')
         # change sun location.
@@ -72,7 +72,7 @@ class ConcreteScene(Scene):
 
 
     #Override(Scene)
-    def _setUpObjects(self):
+    def _setup_objects(self):
         # add a base primitive mesh. in this case a plane mesh is added at origin
         bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
         # default object name is 'Plane'. or index 2 in this case
@@ -81,7 +81,7 @@ class ConcreteScene(Scene):
         bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
     #Override(Scene)
-    def _setUpShader(self, albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1):
+    def _setup_shader(self, concrete=1):
         albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
         roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
         normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')

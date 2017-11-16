@@ -10,13 +10,12 @@ import cv2
 
 
 class CrackShader(MasterShader):
-    def __init__(self, materialName, albedoTexPath, roughnessTexPath, normalTexPath, resolution,
-        albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1]):
-        super(CrackShader, self).__init__(materialName, albedoTexPath, roughnessTexPath, normalTexPath, albedoval, locationval, rotationval, scaleval);
+    def __init__(self, materialName, albedoTexPath, roughnessTexPath, normalTexPath, resolution):
+        super(CrackShader, self).__init__(materialName, albedoTexPath, roughnessTexPath, normalTexPath)
 
-        self.resolution = resolution;
+        self.resolution = resolution
 
-        self._setup();
+        self._setup()
 
 
     def _setup(self):
