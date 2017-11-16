@@ -145,13 +145,13 @@ class MasterShader():
 
     def _loadImagesToTextureNodes(self):
         # ALBEDO MAP
-        bpy.ops.image.open(filepath=self.albedoTexPath);
+        bpy.data.images.load(filepath=self.albedoTexPath);
         self._nodes['albedoconcrete'].image = bpy.data.images[self.albedoTexPath.split("/")[-1]]
         # ROUGHNESS MAP
-        bpy.ops.image.open(filepath=self.roughnessTexPath)
+        bpy.data.images.load(filepath=self.roughnessTexPath)
         self._nodes['roughnessconcrete'].image = bpy.data.images[self.roughnessTexPath.split("/")[-1]]
         # NORMAL MAP
-        bpy.ops.image.open(filepath=self.normalTexPath)
+        bpy.data.images.load(filepath=self.normalTexPath)
         self._nodes['normalconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
 
