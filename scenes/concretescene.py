@@ -63,8 +63,12 @@ class ConcreteScene(Scene):
         # The default name of lamps is 'Lamp' as described in the above comments.
 
         # set color and strength value of sun using nodes.
-        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0] # these are no good color values for a sun!
-        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
+        bpy.data.lamps['Sun'].node_tree.nodes.new("ShaderNodeBlackbody")
+        # use a blackbody emission node for the sun and set the temperature. (based on Planck's Law)
+        bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].inputs['Temperature'].default_value = 5500
+        bpy.data.lamps['Sun'].node_tree.links.new(bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].outputs['Color'],
+                                                 bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'])
+        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.3
 
 
     #Override(Scene)
