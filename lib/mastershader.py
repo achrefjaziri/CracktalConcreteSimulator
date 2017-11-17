@@ -3,11 +3,13 @@ import bpy
 
 class MasterShader:
 
-    def __init__(self, material_name, albedo_texture_path, roughness_texture_path, normal_texture_path):
+    def __init__(self, material_name, albedo_texture_path, roughness_texture_path,
+                 normal_texture_path, height_texture_path):
         self.name = material_name
         self.albedoTexPath = albedo_texture_path
         self.roughnessTexPath = roughness_texture_path
         self.normalTexPath = normal_texture_path
+        self.heightTexPath = height_texture_path
 
         self._nodetree = None
         self._nodes = None
@@ -88,6 +90,9 @@ class MasterShader:
         bpy.data.images.load(filepath=self.normalTexPath)
         self._nodes['normalconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
+        # height map
+        bpy.data.images.load(filepath=self.heightTexPath)
+
     def apply_to_blender_object(self, blender_obj):
         curr_obj = bpy.context.scene.objects[blender_obj]
         curr_obj.select = True
@@ -97,10 +102,23 @@ class MasterShader:
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
 
-    def load_texture(self, albedo_path, roughness_path, normal_path):
+        # introduce mesh displacement based on loaded height map
+        self._displace(curr_obj)
+
+    def _displace(self, blender_obj, disp_strength=0.05):
+        # load the height map and assign it to the displacement modifier's texture
+        bpy.data.textures['displacement'].image = bpy.data.images[self.heightTexPath.split("/")[-1]]
+        blender_obj.modifiers['Displace'].texture = bpy.data.textures['displacement']
+
+        # Blender's default value is strange and displaces way too much.
+        # Advise is to keep the value below 0.1
+        blender_obj.modifiers['Displace'].strength = disp_strength
+
+    def load_texture(self, albedo_path, roughness_path, normal_path, height_path):
         self.albedoTexPath = albedo_path
         self.roughnessTexPath = roughness_path
         self.normalTexPath = normal_path
+        self.heightTextPath = height_path
 
     def sample_texture(self):
         self._load_images_to_textures_nodes()

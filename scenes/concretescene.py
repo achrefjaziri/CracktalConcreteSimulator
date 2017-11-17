@@ -47,10 +47,18 @@ class ConcreteScene(Scene):
         # set color from temperature and light intensity
         bpy.data.lamps['Sun'].node_tree.nodes.new("ShaderNodeBlackbody")
         # use a blackbody emission node for the sun and set the temperature
-        bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].inputs['Temperature'].default_value = 5500
+        bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].inputs['Temperature'].default_value = 6500
         bpy.data.lamps['Sun'].node_tree.links.new(bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].outputs['Color'],
                                                   bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'])
         bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.3
+
+    def _add_modifiers(self, blender_obj):
+        # select given object
+        blender_obj.select = True
+
+        # displacement modifier
+        bpy.ops.object.modifier_add(type='DISPLACE')
+        bpy.data.textures.new('displacement', type='IMAGE')
 
     # Override(Scene)
     def _setup_objects(self):
@@ -61,6 +69,11 @@ class ConcreteScene(Scene):
         bpy.data.objects['Plane'].scale = [6.275, 6.275, 6.275]
         bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
+        # subdivide, so that the vertices can get displaced (instead if just bump-mapping)
+        # TODO: Think of adding a cmd line option for lower-end systems to go with bump-map mode only
+        self.subdivide_object(bpy.data.objects['Plane'], cuts=400)
+        self._add_modifiers(bpy.data.objects['Plane'])
+
     # Override(Scene)
     def _setup_shader(self, concrete=1):
         albedo_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo'
@@ -69,12 +82,16 @@ class ConcreteScene(Scene):
                                       + str(concrete) + '.png')
         normal_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal'
                                    + str(concrete) + '.png')
+        # TODO: FIND OUT IF DUPLICATE IS NECESSARY?!
+        height_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/height'
+                                   + str(concrete) + '.png')
 
         shadername = "concrete"
         if self.isCracked:
+            # TODO: INCLUDE HEIGHT MAP
             shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, self.resolution)
         else:
-            shader = MasterShader(shadername, albedo_path, roughness_path, normal_path)
+            shader = MasterShader(shadername, albedo_path, roughness_path, normal_path, height_path)
 
         self.shaderDict[shadername] = shader
 

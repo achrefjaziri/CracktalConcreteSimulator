@@ -37,15 +37,18 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         else:
             cracked = crack[1]
         # randomly choose which concrete mapset to use
-        concrete = random.randint(1,concretemaps-1)
+        # TODO: Use all textures when done!
+        #concrete = random.randint(1,concretemaps-1)
+        concrete = 1
 
         # sample textures
         albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
         roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
         normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
+        heightPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/height' + str(concrete) + '.png')
        
         print("Load new texture to shader...");
-        scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath);
+        scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
         scene.update();
         print("Done...");
 

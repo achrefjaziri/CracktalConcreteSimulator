@@ -26,6 +26,23 @@ class Scene:
     def _setup_shader(self):
         pass
 
+    def subdivide_object(self, blender_obj, cuts=100):
+        # select given object
+        blender_obj.select = True
+
+        # go into edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        # subdivision of mesh
+        if cuts > 100:
+            bpy.ops.mesh.subdivide(number_cuts=100, quadtri=True)
+            bpy.ops.mesh.subdivide(number_cuts=int(cuts/100), quadtri=True)
+        else:
+            bpy.ops.mesh.subdivide(number_cuts=cuts, quadtri=True)
+
+        # go back into object mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+
     def _reset_scene(self):
         check = bpy.data.objects is not None
         # remove pre-existing objects from blender
