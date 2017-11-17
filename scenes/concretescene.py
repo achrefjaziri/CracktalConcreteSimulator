@@ -13,7 +13,7 @@ class ConcreteScene(Scene):
         # otherwise they are not known to the overrinding function!
         self.resolution = resolution
 
-        self.is_cracked = is_cracked
+        self.isCracked = is_cracked
 
         super(ConcreteScene, self).__init__()
 
@@ -71,7 +71,7 @@ class ConcreteScene(Scene):
                                    + str(concrete) + '.png')
 
         shadername = "concrete"
-        if self.is_cracked:
+        if self.isCracked:
             shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, self.resolution)
         else:
             shader = MasterShader(shadername, albedo_path, roughness_path, normal_path)
@@ -89,11 +89,9 @@ class ConcreteScene(Scene):
         shader.apply_to_blender_object("Plane")
 
     # Override(Scene)
-    # TODO: why is this construct necessary?
     def update(self):
         for key in self.shaderDict:
             try:
-                for key in self.shaderDict:
-                    self.shaderDict[key].sample_texture()
+                self.shaderDict[key].sample_texture()
             except Exception:
-                pass;
+                pass
