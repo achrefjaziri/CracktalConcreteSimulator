@@ -4,6 +4,7 @@ import sys
 import random
 import numpy as np
 from scipy import misc
+from fnmatch import fnmatch
 
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
@@ -36,16 +37,19 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
             cracked = crack[1]
         else:
             cracked = crack[1]
-        # randomly choose which concrete mapset to use
+        # randomly chooses based on uniform distribution as to which concrete mapset to use between index 0 and n_concrete-1
         # TODO: Use all textures when done!
-        #concrete = random.randint(1,concretemaps-1)
-        concrete = 1
+        #concrete = random.randint(0,n_concrete-1)
+        concrete = 0
 
+        concrete_name = concrete_list[concrete].split('_Base_Color')
         # sample textures
-        albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
-        roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
-        normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
-        heightPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/height' + str(concrete) + '.png')
+        albedoPath = os.path.join(concrete_name[0] + '_Base_Color' + concrete_name[1])
+        roughnessPath = os.path.join(concrete_name[0] + '_Roughness' + concrete_name[1])
+        normalPath = os.path.join(concrete_name[0] + '_Normal' + concrete_name[1])
+        heightPath = os.path.join(concrete_name[0] + '_Height' + concrete_name[1])
+        aoPath = os.path.join(concrete_name[0] + '_Ambient_Occlusion' + concrete_name[1])
+        metallicPath = os.path.join(concrete_name[0] + '_Metallic' + concrete_name[1])
        
         print("Load new texture to shader...");
         scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
@@ -107,8 +111,6 @@ for arg in vars(args):
 # Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
 crack = [0, 1]
 
-# concrete dictionary list for different maps to randomly render. Randomly chosen inside mastershader function
-concretemaps = 3 #currently we have 3 maps for concrete albedo, roughness and normal. so give any number in the range of [1,3]
 
 # if directory not found download from online for concrete maps
 if os.path.isdir("concretedictionary"):
@@ -117,6 +119,24 @@ else:
     flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
     flagres2 = os.system('unzip concretedictionary.zip')
     flagres3 = os.system('rm concretedictionary.zip')
+
+# check root path and find all the concrete maps based on _Base_Color
+if (args.path=='/concretedictionary'):  # check for default path as mentioned in concrete dictionary
+    root_path = os.getcwd()+args.path
+else:
+    root_path = args.path
+pattern = "*_Base_Color*"
+
+concrete_list = []
+for path, subdirs, files in os.walk(root_path):
+    for name in files:
+        if fnmatch(name, pattern):
+            concrete_list.append(os.path.join(path,name))
+
+# number of concrete maps is stored in n_concrete
+n_concrete = len(concrete_list)
+# the below is to set a default map which is altered during run time in run function. Please check run function.
+concrete_name = concrete_list[0].split('_Base_Color')
 
 print("Base texture maps have been loaded...");
 # only initialize a deep network if the save option to generate
@@ -149,7 +169,7 @@ if args.deep_learning:
                                 weight_decay=args.weight_decay)
 
 #ensure that cycles engine is set for the basic scene.
-#predefined object name for scene is 'Scene'. Also can be accesed by index 0.
+#predefined object name for scene is 'Scene'. Also can be accesed by index 0 for the first scene.
 print("Setting rendering engine to Cycles render")
 bpy.data.scenes['Scene'].render.engine = 'CYCLES'
 print("Done...");
@@ -163,7 +183,7 @@ print("Done...");
 
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
 print("Setting up scene...");
-scene = ConcreteScene(args.resolution, args.crack);
+scene = ConcreteScene(args.resolution, args.crack, concrete_name);
 print("Done...");
 
 print("Init render manager...");

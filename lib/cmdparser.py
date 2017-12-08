@@ -42,5 +42,6 @@ def parse(argv):
                         metavar="P", help="size of images for deep architecture (default 512)")
     parser.add_argument("-c", "--crack", default=False, type=bool,
                         metavar="C", help="whereter shall be cracks rendered into the images")
-
+    parser.add_argument("-dp", "--path", metavar="Path", default ="/concretedictionary",
+                        help="path of your concrete dictionary")
     return parser.parse_args(argv)

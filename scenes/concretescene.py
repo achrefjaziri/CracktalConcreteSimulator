@@ -8,13 +8,14 @@ from lib.mastershader import MasterShader
 
 
 class ConcreteScene(Scene):
-    def __init__(self, resolution, is_cracked):
+    def __init__(self, resolution, is_cracked, path):
         # attributes of the scene used in setup need to be called before parent init!
         # otherwise they are not known to the overrinding function!
         self.resolution = resolution
 
         self.isCracked = is_cracked
 
+        self.pathname = path
         super(ConcreteScene, self).__init__()
 
     # Override(Scene)
@@ -75,16 +76,14 @@ class ConcreteScene(Scene):
         self._add_modifiers(bpy.data.objects['Plane'])
 
     # Override(Scene)
-    def _setup_shader(self, concrete=1):
-        albedo_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo'
-                                   + str(concrete) + '.png')
-        roughness_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness'
-                                      + str(concrete) + '.png')
-        normal_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal'
-                                   + str(concrete) + '.png')
+    def _setup_shader(self):
         # TODO: FIND OUT IF DUPLICATE IS NECESSARY?!
-        height_path = os.path.join('concretedictionary/concrete' + str(concrete) + '/height'
-                                   + str(concrete) + '.png')
+        albedo_path = os.path.join(self.pathname[0] + '_Base_Color' + self.pathname[1])
+        roughness_path = os.path.join(self.pathname[0] + '_Roughness' + self.pathname[1])
+        normal_path = os.path.join(self.pathname[0] + '_Normal' + self.pathname[1])
+        height_path = os.path.join(self.pathname[0] + '_Height' + self.pathname[1])
+        ao_Path = os.path.join(self.pathname[0] + '_Ambient_Occlusion' + self.pathname[1])
+        metallic_Path = os.path.join(self.pathname[0] + '_Metallic' + self.pathname[1])
 
         shadername = "concrete"
         if self.isCracked:
