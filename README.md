@@ -30,6 +30,7 @@ Note that depending on your OS and Blender version the shortcut "pip" could not 
 * ```numpy```
 * ```scipy```
 * ```pillow```
+* ```fnmatch```
 
 ## Running the code:
 

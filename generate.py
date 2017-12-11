@@ -38,9 +38,7 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         else:
             cracked = crack[1]
         # randomly chooses based on uniform distribution as to which concrete mapset to use between index 0 and n_concrete-1
-        # TODO: Use all textures when done!
-        #concrete = random.randint(0,n_concrete-1)
-        concrete = 0
+        concrete = random.randint(0,n_concrete-1)
 
         concrete_name = concrete_list[concrete].split('_Base_Color')
         # sample textures
