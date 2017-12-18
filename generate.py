@@ -34,7 +34,7 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
     for i in range(num_images):
         # alternatively choose crack or noncrack structure
         if i % 2 == 0:
-            cracked = crack[1]
+            cracked = crack[0]
         else:
             cracked = crack[1]
         # randomly chooses based on uniform distribution as to which concrete mapset to use between index 0 and n_concrete-1

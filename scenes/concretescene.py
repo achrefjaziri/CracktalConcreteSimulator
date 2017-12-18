@@ -88,7 +88,7 @@ class ConcreteScene(Scene):
         shadername = "concrete"
         if self.isCracked:
             # TODO: INCLUDE HEIGHT MAP
-            shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, self.resolution)
+            shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, height_path, self.resolution)
         else:
             shader = MasterShader(shadername, albedo_path, roughness_path, normal_path, height_path)
 
