@@ -50,8 +50,10 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         metallicPath = os.path.join(concrete_name[0] + '_Metallic' + concrete_name[1])
        
         print("Load new texture to shader...");
-        scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
-        scene.update();
+        # TODO: storing height texture path returned from master shader. needs to be fixed
+        heighttexpath = scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
+        # TODO: heigh texture path passed to concretescene. This needs to be fixed.
+        scene.update(heighttexpath);
         print("Done...");
 
         print("Rendering...");
@@ -130,6 +132,8 @@ for path, subdirs, files in os.walk(root_path):
     for name in files:
         if fnmatch(name, pattern):
             concrete_list.append(os.path.join(path,name))
+
+concrete_list = sorted(concrete_list)
 
 # number of concrete maps is stored in n_concrete
 n_concrete = len(concrete_list)

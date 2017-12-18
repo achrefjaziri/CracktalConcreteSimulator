@@ -5,7 +5,7 @@ import os
 from lib.scene import Scene
 from lib.crackshader import CrackShader
 from lib.mastershader import MasterShader
-
+from lib.meshmodifiers import MeshDisplacement
 
 class ConcreteScene(Scene):
     def __init__(self, resolution, is_cracked, path):
@@ -14,6 +14,8 @@ class ConcreteScene(Scene):
         self.resolution = resolution
 
         self.isCracked = is_cracked
+
+        self.DisplacedMesh = None
 
         self.pathname = path
         super(ConcreteScene, self).__init__()
@@ -53,6 +55,7 @@ class ConcreteScene(Scene):
                                                   bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'])
         bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.3
 
+    """
     def _add_modifiers(self, blender_obj):
         # select given object
         blender_obj.select = True
@@ -62,6 +65,7 @@ class ConcreteScene(Scene):
         # Need a remove & add modifier handle
         bpy.ops.object.modifier_add(type='DISPLACE')
         bpy.data.textures.new('displacement', type='IMAGE')
+    """
 
     # Override(Scene)
     def _setup_objects(self):
@@ -75,7 +79,9 @@ class ConcreteScene(Scene):
         # subdivide, so that the vertices can get displaced (instead if just bump-mapping)
         # TODO: Think of adding a cmd line option for lower-end systems to go with bump-map mode only
         self.subdivide_object(bpy.data.objects['Plane'], cuts=400)
-        self._add_modifiers(bpy.data.objects['Plane'])
+
+        self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Plane'])
+        # TODO: do something with displaced plane
 
     # Override(Scene)
     def _setup_shader(self):
@@ -104,12 +110,15 @@ class ConcreteScene(Scene):
         shader.sample_texture()
 
         # Apply shader to obj mesh
+        # TODO: UV unwrapping only happening once!
         shader.apply_to_blender_object("Plane")
 
     # Override(Scene)
-    def update(self):
+    def update(self, heighttexpath):
         for key in self.shaderDict:
             try:
                 self.shaderDict[key].sample_texture()
             except Exception:
                 pass
+
+        self.DisplacedMesh.displace(heighttexpath, disp_strength=1.0)

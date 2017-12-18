@@ -53,6 +53,12 @@ class MasterShader:
         self._nodes['Normal Map'].name = 'normalmapconcrete'
         self._nodes['normalmapconcrete'].location = [-200, -300]
 
+        # TODO: height texture image node created. Check if this is necessary
+        self._nodes.new('ShaderNodeTexImage')
+        self._nodes['Image Texture'].name = 'heightconcrete'  # normal concrete
+        self._nodes['heightconcrete'].location = [-600, -900]
+        self._nodes['heightconcrete'].color_space = 'NONE'
+
         # Emmission Shader Node for displaying ground truth and normal maps
         self._nodes.new('ShaderNodeEmission')
         self._nodes['Emission'].name = 'emit1'
@@ -91,9 +97,10 @@ class MasterShader:
         self._nodes['normalconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
         # height map
-        # TODO: This needs to go into the displacement modifier of the mesh!!! 
+        # TODO: This needs to go into the displacement modifier of the mesh!!!
         bpy.data.images.load(filepath=self.heightTexPath)
-
+        # TODO: Height tex path being assigned to an image in a shitty way. Needs to be fixed.
+        self._nodes['heightconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
     def apply_to_blender_object(self, blender_obj):
         curr_obj = bpy.context.scene.objects[blender_obj]
@@ -105,9 +112,10 @@ class MasterShader:
         bpy.ops.object.mode_set(mode='OBJECT')
 
         # introduce mesh displacement based on loaded height map
-        self._displace(curr_obj)
+        #self._displace(curr_obj)
 
-    def _displace(self, blender_obj, disp_strength=0.05):
+    """
+    def _displace(self, blender_obj, disp_strength=1): #disp_strength=0.05):
         # load the height map and assign it to the displacement modifier's texture
         bpy.data.textures['displacement'].image = bpy.data.images[self.heightTexPath.split("/")[-1]]
         blender_obj.modifiers['Displace'].texture = bpy.data.textures['displacement']
@@ -115,12 +123,15 @@ class MasterShader:
         # Blender's default value is strange and displaces way too much.
         # Advise is to keep the value below 0.1
         blender_obj.modifiers['Displace'].strength = disp_strength
+    """
 
     def load_texture(self, albedo_path, roughness_path, normal_path, height_path):
         self.albedoTexPath = albedo_path
         self.roughnessTexPath = roughness_path
         self.normalTexPath = normal_path
         self.heightTextPath = height_path
+        # TODO: returning height texture path. shitty solution. needs to be fixed.
+        return self.heightTextPath
 
     def sample_texture(self):
         self._load_images_to_textures_nodes()

@@ -27,6 +27,7 @@ class Scene:
         pass
 
     def subdivide_object(self, blender_obj, cuts=100):
+        # TODO: potentially move this to concretescene
         # select given object
         blender_obj.select = True
 
@@ -60,5 +61,5 @@ class Scene:
                 for lamp in bpy.data.lamps:
                     bpy.data.lamps.remove(lamp, do_unlink=True)
 
-    def update(self):
+    def update(self, heighttexpath):
         pass
