@@ -58,6 +58,8 @@ class ConcreteScene(Scene):
         blender_obj.select = True
 
         # displacement modifier
+        # TODO: displacement modifier not getting updated.
+        # Need a remove & add modifier handle
         bpy.ops.object.modifier_add(type='DISPLACE')
         bpy.data.textures.new('displacement', type='IMAGE')
 

@@ -91,7 +91,9 @@ class MasterShader:
         self._nodes['normalconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
 
         # height map
+        # TODO: This needs to go into the displacement modifier of the mesh!!! 
         bpy.data.images.load(filepath=self.heightTexPath)
+
 
     def apply_to_blender_object(self, blender_obj):
         curr_obj = bpy.context.scene.objects[blender_obj]
