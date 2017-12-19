@@ -32,11 +32,6 @@ if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) 
 
 def run(num_images, s, path='tmp/tmp.png', f=1):
     for i in range(num_images):
-        # alternatively choose crack or noncrack structure
-        if i % 2 == 0:
-            cracked = crack[0]
-        else:
-            cracked = crack[1]
         # randomly chooses based on uniform distribution as to which concrete mapset to use between index 0 and n_concrete-1
         concrete = random.randint(0,n_concrete-1)
 
@@ -172,25 +167,25 @@ if args.deep_learning:
 #predefined object name for scene is 'Scene'. Also can be accesed by index 0 for the first scene.
 print("Setting rendering engine to Cycles render")
 bpy.data.scenes['Scene'].render.engine = 'CYCLES'
-print("Done...");
+print("Done...")
 
 # check if mode is object mode else set it to object mode
-print("Selecting object mode...");
+print("Selecting object mode...")
 checkmode = bpy.context.active_object.mode
 if checkmode != 'OBJECT':
     bpy.ops.object.mode_set(mode='OBJECT')
-print("Done...");
+print("Done...")
 
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
-print("Setting up scene...");
-scene = ConcreteScene(args.resolution, args.crack, concrete_name);
-print("Done...");
+print("Setting up scene...")
+scene = ConcreteScene(args.resolution, args.crack, concrete_name)
+print("Done...")
 
-print("Init render manager...");
-renderManager = RenderManager(path="tmp/tmp.png", frames=1, samples=args.samples, tilesize=args.tile_size, resolution=args.resolution, cracked=1);
-renderManager.setScene(scene);
-print("Done...");
+print("Init render manager...")
+renderManager = RenderManager(path="tmp/tmp.png", frames=1, samples=args.samples, tilesize=args.tile_size, resolution=args.resolution, cracked=args.crack)
+renderManager.setScene(scene)
+print("Done...")
 
 print("Rendering...")
 run(args.num_images, args.samples, path='tmp/tmp.png', f=1)
-print("Done...");
+print("Done...")

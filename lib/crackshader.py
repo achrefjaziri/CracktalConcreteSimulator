@@ -134,5 +134,6 @@ class CrackShader(MasterShader):
     # Override(MasterShader)
     def sample_texture(self):
         self._sample_crack()
-        
-        self._load_images_to_textures_nodes()
+        # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
+        heightTexturePath = self._load_images_to_textures_nodes()
+        return heightTexturePath

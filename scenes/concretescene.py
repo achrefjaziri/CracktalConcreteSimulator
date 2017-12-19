@@ -81,11 +81,9 @@ class ConcreteScene(Scene):
         self.subdivide_object(bpy.data.objects['Plane'], cuts=400)
 
         self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Plane'])
-        # TODO: do something with displaced plane
 
     # Override(Scene)
     def _setup_shader(self):
-        # TODO: FIND OUT IF DUPLICATE IS NECESSARY?!
         albedo_path = os.path.join(self.pathname[0] + '_Base_Color' + self.pathname[1])
         roughness_path = os.path.join(self.pathname[0] + '_Roughness' + self.pathname[1])
         normal_path = os.path.join(self.pathname[0] + '_Normal' + self.pathname[1])
@@ -95,7 +93,6 @@ class ConcreteScene(Scene):
 
         shadername = "concrete"
         if self.isCracked:
-            # TODO: INCLUDE HEIGHT MAP
             shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, height_path, self.resolution)
         else:
             shader = MasterShader(shadername, albedo_path, roughness_path, normal_path, height_path)
@@ -122,4 +119,4 @@ class ConcreteScene(Scene):
             except Exception:
                 pass
         # TODO: heightexpath passed to displaced mesh class from concretescene. This is not proper. Needs to be fixed.
-        self.DisplacedMesh.displace(heightTexPath, disp_strength=1.0)
+        self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)

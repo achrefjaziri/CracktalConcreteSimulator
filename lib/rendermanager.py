@@ -15,7 +15,6 @@ class RenderManager():
         self.resolution = resolution;
         self.tilesize = tilesize
         self.cracked = cracked;
-
         # Place-holder lists for rendered image, normal map and ground-truth
         self.result_imgs = []
         self.result_normals = []
@@ -112,6 +111,7 @@ class RenderManager():
 
     def rendergt(self, filepath, frames, samples, crackflag):
         if crackflag:
+            print ('crack map is generated.')
             self.scene.shaderDict["concrete"].set_shader_mode_gt();
 
             bpy.ops.render.render(write_still=True)
@@ -128,7 +128,8 @@ class RenderManager():
             #    gt = gt[:, :, 0:3]
             self.result_gt.append(gt)
         else:
-            gt = np.zeros((args.resolution, args.resolution, 3))
+            print ('crack map not generated.')
+            gt = np.zeros((self.resolution, self.resolution, 3))
             #if args.deep_learning:
             #    gt = misc.imresize(gt, size=(args.patch_size, args.patch_size),  interp='nearest').astype(
             #        float) / 255  # imresize automatically converts to uint8
@@ -136,17 +137,7 @@ class RenderManager():
 
 
     def rendernp(self, filepath, frames, samples, crackflag):
-        if crackflag:
-            self.scene.shaderDict["concrete"].set_shader_mode_normal();
-        else:
-            pass;
-            #nodes.new('ShaderNodeEmission')
-            #nodes['Emission'].name = 'emit1'
-            #nodes['emit1'].location = [450, -100]
-            #nodetree.links.new(nodes['emit1'].outputs['Emission'], nodes['Material Output'].inputs['Surface'])
-            #nodetree.links.new(nodes['emit1'].inputs['Color'], nodes['normalconcrete'].outputs['Color'])
-            #for l in nodes['Material Output'].inputs['Displacement'].links:
-            #    nodetree.links.remove(l)
+        self.scene.shaderDict["concrete"].set_shader_mode_normal();
 
         # render call
         bpy.ops.render.render(write_still=True)
