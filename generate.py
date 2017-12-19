@@ -50,10 +50,8 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         metallicPath = os.path.join(concrete_name[0] + '_Metallic' + concrete_name[1])
        
         print("Load new texture to shader...");
-        # TODO: storing height texture path returned from master shader. needs to be fixed
-        heighttexpath = scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
-        # TODO: heigh texture path passed to concretescene. This needs to be fixed.
-        scene.update(heighttexpath);
+        scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
+        scene.update();
         print("Done...");
 
         print("Rendering...");

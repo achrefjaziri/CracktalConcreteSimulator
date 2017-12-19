@@ -99,8 +99,10 @@ class MasterShader:
         # height map
         # TODO: This needs to go into the displacement modifier of the mesh!!!
         bpy.data.images.load(filepath=self.heightTexPath)
-        # TODO: Height tex path being assigned to an image in a shitty way. Needs to be fixed.
-        self._nodes['heightconcrete'].image = bpy.data.images[self.normalTexPath.split("/")[-1]]
+        # TODO: Height tex path being assigned to an image in a improper way. Needs to be fixed.
+        self._nodes['heightconcrete'].image = bpy.data.images[self.heightTexPath.split("/")[-1]]
+        # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
+        return self.heightTexPath.split("/")[-1]
 
     def apply_to_blender_object(self, blender_obj):
         curr_obj = bpy.context.scene.objects[blender_obj]
@@ -129,9 +131,9 @@ class MasterShader:
         self.albedoTexPath = albedo_path
         self.roughnessTexPath = roughness_path
         self.normalTexPath = normal_path
-        self.heightTextPath = height_path
-        # TODO: returning height texture path. shitty solution. needs to be fixed.
-        return self.heightTextPath
+        self.heightTexPath = height_path
 
     def sample_texture(self):
-        self._load_images_to_textures_nodes()
+        # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
+        heightTexturePath = self._load_images_to_textures_nodes()
+        return heightTexturePath

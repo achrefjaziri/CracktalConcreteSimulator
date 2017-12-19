@@ -114,11 +114,12 @@ class ConcreteScene(Scene):
         shader.apply_to_blender_object("Plane")
 
     # Override(Scene)
-    def update(self, heighttexpath):
+    def update(self):
         for key in self.shaderDict:
             try:
-                self.shaderDict[key].sample_texture()
+                # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
+                heightTexPath = self.shaderDict[key].sample_texture()
             except Exception:
                 pass
-
-        self.DisplacedMesh.displace(heighttexpath, disp_strength=1.0)
+        # TODO: heightexpath passed to displaced mesh class from concretescene. This is not proper. Needs to be fixed.
+        self.DisplacedMesh.displace(heightTexPath, disp_strength=1.0)
