@@ -9,9 +9,12 @@ class MeshDisplacement:
         bpy.ops.object.modifier_add(type='DISPLACE')
         bpy.data.textures.new('displacement', type='IMAGE')
 
-    def displace(self, height_tex_path, disp_strength=0.05):
+    def displace(self, height_texture, disp_strength=0.05):
         # load the height map and assign it to the displacement modifier's texture
-        bpy.data.textures['displacement'].image = bpy.data.images[height_tex_path.split("/")[-1]]
+        if type(height_texture) is str:
+            bpy.data.textures['displacement'].image = bpy.data.images[height_texture.split("/")[-1]]
+        else:
+            bpy.data.textures['displacement'].image = height_texture
         self.mesh.modifiers['Displace'].texture = bpy.data.textures['displacement']
 
         # Blender's default value is strange and displaces way too much.

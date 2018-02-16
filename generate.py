@@ -41,6 +41,7 @@ def run(num_images, s, path='tmp/tmp.png', f=1):
         roughnessPath = os.path.join(concrete_name[0] + '_Roughness' + concrete_name[1])
         normalPath = os.path.join(concrete_name[0] + '_Normal' + concrete_name[1])
         heightPath = os.path.join(concrete_name[0] + '_Height' + concrete_name[1])
+        # TODO: Use ambient occlusion and metallic textures in the nodes
         aoPath = os.path.join(concrete_name[0] + '_Ambient_Occlusion' + concrete_name[1])
         metallicPath = os.path.join(concrete_name[0] + '_Metallic' + concrete_name[1])
        
@@ -101,14 +102,12 @@ print("Command line options:")
 for arg in vars(args):
     print(arg, getattr(args, arg))
 
-# Crack possibilities as a list. 0: no crack. 1: crack. Randomly chosen inside sampleandrender function
-crack = [0, 1]
-
 
 # if directory not found download from online for concrete maps
 if os.path.isdir("concretedictionary"):
     print ("Concrete dictionary maps folder found")
 else:
+    # TODO: Modify the link when we actually upload the updated cocnrete dictionary to any server
     flagres1 = os.system('wget -O concretedictionary.zip "https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1"')
     flagres2 = os.system('unzip concretedictionary.zip')
     flagres3 = os.system('rm concretedictionary.zip')
@@ -178,6 +177,7 @@ print("Done...")
 
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
 print("Setting up scene...")
+# print args.crack
 scene = ConcreteScene(args.resolution, args.crack, concrete_name)
 print("Done...")
 

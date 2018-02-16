@@ -10,7 +10,7 @@ from lib.meshmodifiers import MeshDisplacement
 class ConcreteScene(Scene):
     def __init__(self, resolution, is_cracked, path):
         # attributes of the scene used in setup need to be called before parent init!
-        # otherwise they are not known to the overrinding function!
+        # otherwise they are not known to the overriding function!
         self.resolution = resolution
 
         self.isCracked = is_cracked
@@ -92,6 +92,7 @@ class ConcreteScene(Scene):
         metallic_Path = os.path.join(self.pathname[0] + '_Metallic' + self.pathname[1])
 
         shadername = "concrete"
+
         if self.isCracked:
             shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, height_path, self.resolution)
         else:
@@ -115,8 +116,15 @@ class ConcreteScene(Scene):
         for key in self.shaderDict:
             try:
                 # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
-                heightTexPath = self.shaderDict[key].sample_texture()
+                if self.isCracked:
+                    heightTexPath, img_tex_heights = self.shaderDict[key].sample_texture()
+                else:
+                    heightTexPath = self.shaderDict[key].sample_texture()
             except Exception:
                 pass
         # TODO: heightexpath passed to displaced mesh class from concretescene. This is not proper. Needs to be fixed.
-        self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
+        if self.isCracked:
+            self.DisplacedMesh.displace(heightTexPath, disp_strength = 0.05)
+            self.DisplacedMesh.displace(img_tex_heights, disp_strength = 0.025)
+        else:
+            self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)

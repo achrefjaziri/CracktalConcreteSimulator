@@ -147,7 +147,9 @@ def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     # alpha channel addition
     img = add_alpha_channel(img)
 
+    height_img = img
     # invert the matrix so the crack is black and the background is white
     img = invert_matrix(img)
 
-    return img, img, normals
+    # This returns ground truth, roughness, normal and height maps.
+    return img, img, normals, height_img
