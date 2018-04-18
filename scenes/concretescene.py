@@ -125,6 +125,8 @@ class ConcreteScene(Scene):
         # TODO: heightexpath passed to displaced mesh class from concretescene. This is not proper. Needs to be fixed.
         if self.isCracked:
             self.DisplacedMesh.displace(heightTexPath, disp_strength = 0.05)
-            self.DisplacedMesh.displace(img_tex_heights, disp_strength = 0.025)
+            # Negative value is given for displacement strength of crack because displacement has to be in
+            # the opposite direction of the normals in object coordinates.
+            self.DisplacedMesh.displace(img_tex_heights, disp_strength = -0.025)
         else:
             self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
