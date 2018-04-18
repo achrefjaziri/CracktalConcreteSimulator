@@ -59,23 +59,29 @@ class CrackShader(MasterShader):
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'],
                                  self._nodes['roughnessmix'].inputs[1])
         self._nodetree.links.new(self._nodes['roughnesscrack'].outputs['Color'], self._nodes['roughnessmix'].inputs[2])
-        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmix'].inputs[1])
-        self._nodetree.links.new(self._nodes['normalcrack'].outputs['Color'], self._nodes['normalmix'].inputs[2])
+
+        # self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmix'].inputs[1])
+        # self._nodetree.links.new(self._nodes['normalcrack'].outputs['Color'], self._nodes['normalmix'].inputs[2])
 
         # link albedo, roughness and normal mixrgb maps to color, roughness displacement.
         self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['pbr'].inputs[0])
         self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['pbr'].inputs['Roughness'])
-        self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
+        # self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
 
         # TODO: Check if roughness maps and normal maps need to be mixed when we use height maps
         # self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'], self._nodes['pbr'].inputs['Roughness'])
-        # self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
+        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
+
+        self._nodetree.links.new(self._nodes['normalmapconcrete'].outputs[0], self._nodes['pbr'].inputs['Normal'])
         self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
 
     def _generate_fractal_crack_maps(self):
         generated_maps = []
         # generate crack maps
-        generated_maps[0:3] = (generate_fractal_cracks(self.resolution, 7))
+        # TODO: uncomment below line and comment line after if fractal crack generation code is parallelized in GPU
+        # fractal_depth = int(np.log2(self.resolution) + 1)
+        fractal_depth = 7
+        generated_maps[0:3] = (generate_fractal_cracks(self.resolution, fractal_depth))
         # order is: ground truth, roughness, normals and height map
         # for each map check whether it already has an alpha channel, i.e. the albedo map should have one
         # for all other maps add an alpha channel that is filled with ones
@@ -101,15 +107,6 @@ class CrackShader(MasterShader):
 
         return img_tex_albedo, img_tex_roughness, img_tex_normals, img_tex_heights
 
-    def _sample_crack(self):
-        img_tex_albedo, img_tex_roughness, img_tex_normals, img_tex_heights = self._generate_fractal_crack_maps()
-
-        # feed new texture into appropriate nodes
-        self._nodes['albedocrack'].image = img_tex_albedo
-        self._nodes['roughnesscrack'].image = img_tex_roughness
-        self._nodes['normalcrack'].image = img_tex_normals
-        self._nodes['heightcrack'].image = img_tex_heights
-
     def set_shader_mode_gt(self):
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['albedocrack'].outputs['Color'])
         self._nodetree.links.new(self._nodes['emit1'].outputs['Emission'],
@@ -128,6 +125,7 @@ class CrackShader(MasterShader):
         for l in self._nodes['Material Output'].inputs['Displacement'].links:
             self._nodetree.links.remove(l)
 
+        # TODO: with lighting currently being calculated from displacement map, this is inaccurate.
         self._nodetree.links.new(self._nodes['emit1'].inputs['Color'], self._nodes['normalmix'].outputs['Color'])
 
     def set_shader_mode_color(self):
@@ -135,16 +133,24 @@ class CrackShader(MasterShader):
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'],
                                  self._nodes['roughnessmix'].inputs[1])
         self._nodetree.links.new(self._nodes['roughnesscrack'].outputs['Color'], self._nodes['roughnessmix'].inputs[2])
+
         self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmix'].inputs[1])
         self._nodetree.links.new(self._nodes['normalcrack'].outputs['Color'], self._nodes['normalmix'].inputs[2])
 
         # link albedo, roughness and normal mixrgb maps to color, roughness displacement
         self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['pbr'].inputs[0])
         self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['pbr'].inputs['Roughness'])
-        self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
+        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
         self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
 
     def _load_images_to_textures_nodes(self):
+        img_tex_albedo, img_tex_roughness, img_tex_normals, img_tex_heights = self._generate_fractal_crack_maps()
+
+        # feed new texture into appropriate nodes
+        self._nodes['albedocrack'].image = img_tex_albedo
+        self._nodes['roughnesscrack'].image = img_tex_roughness
+        self._nodes['normalcrack'].image = img_tex_normals
+        self._nodes['heightcrack'].image = img_tex_heights
         # albedo map
         bpy.data.images.load(filepath=self.albedoTexPath)
         self._nodes['albedoconcrete'].image = bpy.data.images[self.albedoTexPath.split("/")[-1]]
@@ -163,12 +169,11 @@ class CrackShader(MasterShader):
         # TODO: Height tex path being assigned to an image in a improper way. Needs to be fixed.
         self._nodes['heightconcrete'].image = bpy.data.images[self.heightTexPath.split("/")[-1]]
         # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
-        img_tex_albedo, img_tex_roughness, img_tex_normals, img_tex_heights = self._generate_fractal_crack_maps()
+        #img_tex_albedo, img_tex_roughness, img_tex_normals, img_tex_heights = self._generate_fractal_crack_maps()
         return self.heightTexPath.split("/")[-1], img_tex_heights
 
     # Override(MasterShader)
     def sample_texture(self):
-        self._sample_crack()
         # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
         heightTexturePath, img_tex_heights = self._load_images_to_textures_nodes()
         return heightTexturePath, img_tex_heights

@@ -91,7 +91,7 @@ def calculate_normals(img):
     return Normals
 
 def widen_line(img):
-    Blur_scales = numpy.array((1, 3, 5))  # need to be odd
+    Blur_scales = numpy.array((3, 5))  # need to be odd
     Random_Blur = Blur_scales[numpy.random.randint(0, len(Blur_scales))]
     img = cv2.GaussianBlur(img, (Random_Blur, Random_Blur), 0)
     # re-normalize the image to maximum range
@@ -150,6 +150,8 @@ def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     height_img = img
     # invert the matrix so the crack is black and the background is white
     img = invert_matrix(img)
+
+    # TODO: check if inversion is required. remove below line otherwise
 
     # This returns ground truth, roughness, normal and height maps.
     return img, img, normals, height_img

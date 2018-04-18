@@ -34,6 +34,8 @@ class MasterShader:
         self._nodes.new('ShaderNodeBsdfPrincipled')
         self._nodes['Principled BSDF'].name = 'pbr'
         self._nodes['pbr'].location = [450, 600]
+        # inputs[5] is specular value
+        self._nodes['pbr'].inputs[5].default_value = 0.0
 
         self._nodes.new('ShaderNodeTexImage')
         self._nodes['Image Texture'].name = 'albedoconcrete'  # albedo concrete

@@ -17,6 +17,8 @@ class ConcreteScene(Scene):
 
         self.DisplacedMesh = None
 
+        self.DisplacedCrack = None
+
         self.pathname = path
         super(ConcreteScene, self).__init__()
 
@@ -69,18 +71,21 @@ class ConcreteScene(Scene):
 
     # Override(Scene)
     def _setup_objects(self):
-        # add a base primitive mesh. in this case a plane mesh is added at the origin
-        bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
-        # default object name is 'Plane'. or index 2 in this case
+        # add a base primitive mesh. in this case a grid mesh is added at the origin
+        bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/4), y_subdivisions=int(self.resolution/4),
+                                        location=(0.0, -2.0, 5.5))
+        # default object name is 'Grid'
         # set scale and rotation
-        bpy.data.objects['Plane'].scale = [6.275, 6.275, 6.275]
-        bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
+        bpy.data.objects['Grid'].scale = [6.275, 6.275, 6.275]
+        bpy.data.objects['Grid'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
         # subdivide, so that the vertices can get displaced (instead if just bump-mapping)
         # TODO: Think of adding a cmd line option for lower-end systems to go with bump-map mode only
-        self.subdivide_object(bpy.data.objects['Plane'], cuts=400)
-
-        self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Plane'])
+        # self.subdivide_object(bpy.data.objects['Plane'], cuts=400)
+        #
+        self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Grid'], 'concrete_displacement')
+        if self.isCracked:
+            self.DisplacedCrack = MeshDisplacement(bpy.data.objects['Grid'], 'crack_displacement')
 
     # Override(Scene)
     def _setup_shader(self):
@@ -100,8 +105,8 @@ class ConcreteScene(Scene):
 
         self.shaderDict[shadername] = shader
 
-        # Link shader to plane object
-        bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete']
+        # Link shader to grid object
+        bpy.data.objects['Grid'].active_material = bpy.data.materials['concrete']
         # TODO: sample shader image sources!
 
         # Sample shader values
@@ -109,7 +114,7 @@ class ConcreteScene(Scene):
 
         # Apply shader to obj mesh
         # TODO: UV unwrapping only happening once!
-        shader.apply_to_blender_object("Plane")
+        shader.apply_to_blender_object("Grid")
 
     # Override(Scene)
     def update(self):
@@ -118,15 +123,13 @@ class ConcreteScene(Scene):
                 # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
                 if self.isCracked:
                     heightTexPath, img_tex_heights = self.shaderDict[key].sample_texture()
+                    self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
+                    # Negative value is given for displacement strength of crack because displacement has to be in
+                    # the opposite direction of the normals in object coordinates.
+                    self.DisplacedCrack.displace(img_tex_heights, disp_strength=-0.01)
                 else:
                     heightTexPath = self.shaderDict[key].sample_texture()
+                    self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
             except Exception:
                 pass
-        # TODO: heightexpath passed to displaced mesh class from concretescene. This is not proper. Needs to be fixed.
-        if self.isCracked:
-            self.DisplacedMesh.displace(heightTexPath, disp_strength = 0.05)
-            # Negative value is given for displacement strength of crack because displacement has to be in
-            # the opposite direction of the normals in object coordinates.
-            self.DisplacedMesh.displace(img_tex_heights, disp_strength = -0.025)
-        else:
-            self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
+
