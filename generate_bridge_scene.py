@@ -15,6 +15,7 @@ from lib.fractalcracks import generate_fractal_cracks
 from lib.cmdparser import parse
 
 from scenes.concretescene import ConcreteScene
+from scenes.bridgescene import BridgeScene
 
 from lib.rendermanager import RenderManager
 
@@ -31,65 +32,67 @@ if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) 
 
 
 def run(num_images, s, path='tmp/tmp.png', f=1):
-    for i in range(num_images):
-        # randomly chooses based on uniform distribution as to which concrete mapset to use between index 0 and n_concrete-1
-        concrete = random.randint(0,n_concrete-1)
+	for idx, img_fname in enumerate(scene.cam_traj_key):
+		for i in range(num_images):
+		    # randomly chooses based on uniform distribution as to which concrete mapset to use between index 0 and n_concrete-1
+		    concrete = random.randint(0,n_concrete-1)
 
-        concrete_name = concrete_list[concrete].split('_Base_Color')
-        # sample textures
-        albedoPath = os.path.join(concrete_name[0] + '_Base_Color' + concrete_name[1])
-        roughnessPath = os.path.join(concrete_name[0] + '_Roughness' + concrete_name[1])
-        normalPath = os.path.join(concrete_name[0] + '_Normal' + concrete_name[1])
-        heightPath = os.path.join(concrete_name[0] + '_Height' + concrete_name[1])
-        # TODO: Use ambient occlusion and metallic textures in the nodes
-        aoPath = os.path.join(concrete_name[0] + '_Ambient_Occlusion' + concrete_name[1])
-        metallicPath = os.path.join(concrete_name[0] + '_Metallic' + concrete_name[1])
-       
-        print("Load new texture to shader...");
-        scene.shaderDict["concrete"].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
-        scene.update();
-        print("Done...");
+		    concrete_name = concrete_list[concrete].split('_Base_Color')
+		    # sample textures
+		    albedoPath = os.path.join(concrete_name[0] + '_Base_Color' + concrete_name[1])
+		    roughnessPath = os.path.join(concrete_name[0] + '_Roughness' + concrete_name[1])
+		    normalPath = os.path.join(concrete_name[0] + '_Normal' + concrete_name[1])
+		    heightPath = os.path.join(concrete_name[0] + '_Height' + concrete_name[1])
+		    # TODO: Use ambient occlusion and metallic textures in the nodes
+		    aoPath = os.path.join(concrete_name[0] + '_Ambient_Occlusion' + concrete_name[1])
+		    metallicPath = os.path.join(concrete_name[0] + '_Metallic' + concrete_name[1])
+		   
+		    print("Load new texture to shader...");
+		    shadername = "concrete"
+		    scene.shaderDict[shadername].load_texture(albedoPath, roughnessPath, normalPath, heightPath);
+		    scene.update();
+		    print("Done...");
 
-        print("Rendering...");
-        renderManager.render(camera = bpy.data.objects['Camera'])
-        print("Done...");
+		    print("Rendering...");
+		    renderManager.render(camera = bpy.data.objects['Camera'+str(idx)]);
+		    print("Done...");
 
-        # save images to temporary folder if required for viewing later on
-        if args.save_images:
-            res_string = os.path.join('tmp/render'+str(i)+'.png')
-            gt_string = os.path.join('tmp/gt' + str(i) + '.png')
-            normal_string = os.path.join('tmp/normal' + str(i) + '.png')
-            misc.imsave(res_string, renderManager.result_imgs[-1])
-            print("image save done...")
-            misc.imsave(normal_string, renderManager.result_normals[-1])
-            print("normal map save done...")
-            misc.imsave(gt_string, renderManager.result_gt[-1])
-            print("ground truth save done...")
-            print("");
+		    # save images to temporary folder if required for viewing later on
+		    if args.save_images:
+		        res_string = os.path.join('tmp/render'+'_c_'+str(idx)+'_i_'+str(i)+'.png')
+		        gt_string = os.path.join('tmp/gt' +'_c_'+str(idx)+'_i_'+str(i)+'.png')
+		        normal_string = os.path.join('tmp/normal' +'_c_'+str(idx)+'_i_'+str(i)+'.png')
+		        misc.imsave(res_string, renderManager.result_imgs[-1])
+		        print("image save done...")
+		        misc.imsave(normal_string, renderManager.result_normals[-1])
+		        print("normal map save done...")
+		        misc.imsave(gt_string, renderManager.result_gt[-1])
+		        print("ground truth save done...")
+		        print("");
 
-        if i > 0: # additional check as 0 % anything = 0
-            if i % args.batch_size == 0:
-                # feed the deep network
-                if args.deep_learning:
-                    # convert the list into numpy arrays and convert from float64 to float32
-                    tmp_imgs = np.array(renderManager.result_imgs).astype(np.float32)
-                    tmp_gts = np.array(renderManager.result_gt).astype(np.float32)
+		    if i > 0: # additional check as 0 % anything = 0
+		        if i % args.batch_size == 0:
+		            # feed the deep network
+		            if args.deep_learning:
+		                # convert the list into numpy arrays and convert from float64 to float32
+		                tmp_imgs = np.array(renderManager.result_imgs).astype(np.float32)
+		                tmp_gts = np.array(renderManager.result_gt).astype(np.float32)
 
-                    # torch expects image size[1] to be the channels
-                    tmp_imgs = np.transpose(tmp_imgs, (0, 3, 1, 2))
-                    tmp_gts = np.transpose(tmp_gts, (0, 3, 1, 2))
+		                # torch expects image size[1] to be the channels
+		                tmp_imgs = np.transpose(tmp_imgs, (0, 3, 1, 2))
+		                tmp_gts = np.transpose(tmp_gts, (0, 3, 1, 2))
 
-                    # convert to torch tensor
-                    image_tensor = torch.from_numpy(tmp_imgs)
-                    gt_tensor = torch.from_numpy(tmp_gts)
+		                # convert to torch tensor
+		                image_tensor = torch.from_numpy(tmp_imgs)
+		                gt_tensor = torch.from_numpy(tmp_gts)
 
-                    print("Training deep net!")
-                    train(image_tensor, gt_tensor, model, criterion, optimizer)
+		                print("Training deep net!")
+		                train(image_tensor, gt_tensor, model, criterion, optimizer)
 
-                # clear the lists of stored results
-                del renderManager.result_imgs[:]
-                del renderManager.result_normals[:]
-                del renderManager.result_gt[:]
+		            # clear the lists of stored results
+		            del renderManager.result_imgs[:]
+		            del renderManager.result_normals[:]
+		            del renderManager.result_gt[:]
 
 
 ##################
@@ -178,7 +181,24 @@ print("Done...")
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
 print("Setting up scene...")
 # print args.crack
-scene = ConcreteScene(args.resolution, args.crack, concrete_name)
+imagemetadata_column_names = ['image_file_name', 
+		        'ts', 
+		        'uav_x_pos', 
+		        'uav_y_pos', 
+		        'uav_z_pos', 
+		        'uav_roll', 
+		        'uav_pitch',
+		        'uav_yaw', 
+		        'gimbal_roll', 
+		        'gimbal_pitch', 
+		        'gimbal_yaw', 
+		        'camera_x', 
+		        'camera_y', 
+		        'camera_z', 
+		        'camera_roll', 
+		        'camera_pitch', 
+		        'camera_yaw']
+scene = BridgeScene(args.resolution, args.crack, concrete_name, '/home/julia/AEROBI/3d_point_mapping/data/pcl_cleaned_plane_vertical_cylinder_pavement.ply', '/home/julia/AEROBI/3d_point_mapping/data/2018_03_16-10_40_56/PICTURE_METADATA/PICTURE_metadata.csv', imagemetadata_column_names)
 print("Done...")
 
 print("Init render manager...")

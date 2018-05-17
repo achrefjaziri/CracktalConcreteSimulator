@@ -74,6 +74,12 @@ class ConcreteScene(Scene):
         # add a base primitive mesh. in this case a grid mesh is added at the origin
         bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/4), y_subdivisions=int(self.resolution/4),
                                         location=(0.0, -2.0, 5.5))
+                                        
+        #an alternative to Grid is Plane with subdivide
+        #ATTENTION: some bug - if Plane is not renamed into Grid, mesh displacement does not work, because of a lot of hard-coded stuff
+        #bpy.ops.mesh.primitive_plane_add( location=(0.0, -2.0, 5.5) )                         
+        #bpy.data.objects['Plane'].name = 'Grid'
+                                        
         # default object name is 'Grid'
         # set scale and rotation
         bpy.data.objects['Grid'].scale = [6.275, 6.275, 6.275]
@@ -81,7 +87,7 @@ class ConcreteScene(Scene):
 
         # subdivide, so that the vertices can get displaced (instead if just bump-mapping)
         # TODO: Think of adding a cmd line option for lower-end systems to go with bump-map mode only
-        # self.subdivide_object(bpy.data.objects['Plane'], cuts=400)
+        # self.subdivide_object(bpy.data.objects['Grid'], cuts=int(self.resolution/4))
         #
         self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Grid'], 'concrete_displacement')
         if self.isCracked:
@@ -114,7 +120,7 @@ class ConcreteScene(Scene):
 
         # Apply shader to obj mesh
         # TODO: UV unwrapping only happening once!
-        shader.apply_to_blender_object("Grid")
+        shader.apply_to_blender_object(bpy.data.objects['Grid'])
 
     # Override(Scene)
     def update(self):

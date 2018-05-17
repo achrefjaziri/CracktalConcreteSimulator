@@ -95,7 +95,10 @@ def widen_line(img):
     Random_Blur = Blur_scales[numpy.random.randint(0, len(Blur_scales))]
     img = cv2.GaussianBlur(img, (Random_Blur, Random_Blur), 0)
     # re-normalize the image to maximum range
-    img = 255 * (img.astype(float) / img.max())
+    if img.max() != 0:
+    	img = 255 * (img.astype(float) / img.max())
+    else:
+    	print ( "img.max in widen_line of fractalcracks.py is: " + str(img.max()) )
 
     return img
 

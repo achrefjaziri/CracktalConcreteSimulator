@@ -9,8 +9,8 @@ class MeshDisplacement:
         self.texture_name = texture_name
         bpy.ops.object.modifier_add(type='DISPLACE')
         bpy.data.textures.new(self.texture_name, type='IMAGE')
-        bpy.data.objects['Grid'].modifiers['Displace'].name = self.texture_name
-        bpy.data.objects['Grid'].modifiers[self.texture_name].mid_level = 0.00
+        bpy.data.objects[blender_object.name].modifiers['Displace'].name = self.texture_name
+        bpy.data.objects[blender_object.name].modifiers[self.texture_name].mid_level = 0.00
 
     def displace(self, height_texture, disp_strength=0.05):
         # load the height map and assign it to the displacement modifier's texture

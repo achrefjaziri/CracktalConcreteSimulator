@@ -33,7 +33,8 @@ class Scene:
 
         # go into edit mode
         bpy.ops.object.mode_set(mode='EDIT')
-
+        bpy.ops.mesh.select_all(action='SELECT')
+		
         # subdivision of mesh
         if cuts > 100:
             bpy.ops.mesh.subdivide(number_cuts=100, quadtri=True)
@@ -43,6 +44,8 @@ class Scene:
 
         # go back into object mode
         bpy.ops.object.mode_set(mode='OBJECT')
+        
+        blender_obj.select = False
 
     def _reset_scene(self):
         check = bpy.data.objects is not None

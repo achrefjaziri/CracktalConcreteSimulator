@@ -27,15 +27,15 @@ class RenderManager():
         self.scene = scene;
 
 
-    def render(self):
+    def render(self, camera):
         bpy.data.scenes['Scene'].frame_end = self.frames
         bpy.data.scenes['Scene'].render.filepath = self.path
         bpy.data.scenes['Scene'].cycles.samples = self.samples
         bpy.data.scenes['Scene'].render.resolution_x = self.resolution
         bpy.data.scenes['Scene'].render.resolution_y = self.resolution
         bpy.data.scenes['Scene'].render.resolution_percentage = 100
-        # before rendering, set the sceen camera to the camera that you created
-        bpy.data.scenes['Scene'].camera = bpy.data.objects['Camera']
+        # before rendering, set the sceen camera to the camera that you chose
+        bpy.data.scenes['Scene'].camera = camera
 
         #set render tile sizes
         bpy.data.scenes['Scene'].render.tile_x = self.tilesize

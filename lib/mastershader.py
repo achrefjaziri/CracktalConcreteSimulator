@@ -107,8 +107,7 @@ class MasterShader:
         return self.heightTexPath.split("/")[-1]
 
     def apply_to_blender_object(self, blender_obj):
-        curr_obj = bpy.context.scene.objects[blender_obj]
-        curr_obj.select = True
+        blender_obj.select = True
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.uv.unwrap()
