@@ -4,8 +4,8 @@ import os
 import sys
 import numpy as np
 import colorsys
-from scipy import misc
 import random
+import imageio
 
 class RenderManager():
     def __init__(self, path, frames, samples, resolution, tilesize, cracked):
@@ -86,7 +86,7 @@ class RenderManager():
         bpy.ops.render.render(write_still=True)
         # as it seems impossible to access rendered image directly due to some blender internal
         # buffer freeing issues, we save the result to a tmp image and load it again.
-        res = misc.imread(filepath)
+        res = imageio.imread(filepath)
         # if used for deep learning, down-sample and exclude alpha channel before feeding into list
         #if args.deep_learning:
         #    res = misc.imresize(res, size=(args.patch_size,args.patch_size),  interp='nearest').astype(float)/255 #imresize automatically converts to uint8
@@ -115,15 +115,15 @@ class RenderManager():
             self.scene.shaderDict["concrete"].set_shader_mode_gt();
 
             bpy.ops.render.render(write_still=True)
-            gt = misc.imread(filepath)
+            gt = imageio.imread(filepath)
             # binarize the ground-truth map
             gt = gt > 0
             gt = gt.astype(int)
-            misc.imsave(filepath, gt)
+            imageio.imwrite(filepath, gt)
 
             # if used for deep learning, down-sample and exclude alpha channel before feeding into list
             #if args.deep_learning:
-            #    gt = misc.imread(filepath)
+            #    gt = imageio.imread(filepath)
             #    gt = misc.imresize(gt, size=(args.patch_size, args.patch_size),  interp='nearest').astype(float) / 255  # imresize automatically converts to uint8
             #    gt = gt[:, :, 0:3]
             self.result_gt.append(gt)
@@ -142,9 +142,9 @@ class RenderManager():
         # render call
         bpy.ops.render.render(write_still=True)
 
-        self.result_normals.append(misc.imread(filepath))
+        self.result_normals.append(imageio.imread(filepath))
 
-        res = misc.imread(filepath)
+        res = imageio.imread(filepath)
         # if used for deep learning, down-sample and exclude alpha channel before feeding into list
         #if args.deep_learning:
         #    res = misc.imresize(res, size=(args.patch_size, args.patch_size), interp='nearest').astype(float) / 255  # imresize automatically converts to uint8
