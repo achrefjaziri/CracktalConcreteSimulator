@@ -7,6 +7,7 @@ from lib.crackshader import CrackShader
 from lib.mastershader import MasterShader
 from lib.meshmodifiers import MeshDisplacement
 
+
 class ConcreteScene(Scene):
     def __init__(self, resolution, is_cracked, path):
         # attributes of the scene used in setup need to be called before parent init!
@@ -74,11 +75,6 @@ class ConcreteScene(Scene):
         # add a base primitive mesh. in this case a grid mesh is added at the origin
         bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/4), y_subdivisions=int(self.resolution/4),
                                         location=(0.0, -2.0, 5.5))
-                                        
-        #an alternative to Grid is Plane with subdivide
-        #ATTENTION: some bug - if Plane is not renamed into Grid, mesh displacement does not work, because of a lot of hard-coded stuff
-        #bpy.ops.mesh.primitive_plane_add( location=(0.0, -2.0, 5.5) )                         
-        #bpy.data.objects['Plane'].name = 'Grid'
                                         
         # default object name is 'Grid'
         # set scale and rotation

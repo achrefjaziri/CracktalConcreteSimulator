@@ -80,6 +80,7 @@ class CrackShader(MasterShader):
         # generate crack maps
         # TODO: uncomment below line and comment line after if fractal crack generation code is parallelized in GPU
         # fractal_depth = int(np.log2(self.resolution) + 1)
+        # TODO: hardcoded
         fractal_depth = 7
         generated_maps[0:3] = (generate_fractal_cracks(self.resolution, fractal_depth))
         # order is: ground truth, roughness, normals and height map

@@ -103,7 +103,7 @@ class MasterShader:
         bpy.data.images.load(filepath=self.heightTexPath)
         # TODO: Height tex path being assigned to an image in a improper way. Needs to be fixed.
         self._nodes['heightconcrete'].image = bpy.data.images[self.heightTexPath.split("/")[-1]]
-        # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
+        # TODO: returning height texture path so that it can be used for displacement of mesh. This is an improper fix.
         return self.heightTexPath.split("/")[-1]
 
     def apply_to_blender_object(self, blender_obj):
