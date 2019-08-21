@@ -9,7 +9,7 @@ def kochenize(first_p, second_p, i):
     angle_check = False
     while angle_check == False:
         theta = numpy.random.normal(mu, sigma)
-        if numpy.pi/4.0 <= theta >= (-1.0 * numpy.pi/4.0):
+        if theta >= (-1.0 * numpy.pi / 4.0) and theta <= numpy.pi / 4.0:
             angle_check = True
 
     dist_x = second_p[0] - first_p[0]

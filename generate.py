@@ -51,6 +51,9 @@ def run(num_images, n_concrete):
         print("Done...")
 
         # save images to folder
+        if not os.path.isdir("res"):
+            os.mkdir("res")
+
         res_string = os.path.join('res/render' + str(i)+'.png')
         gt_string = os.path.join('res/gt' + str(i) + '.png')
         normal_string = os.path.join('res/normal' + str(i) + '.png')
