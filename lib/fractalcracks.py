@@ -158,7 +158,7 @@ def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     # alpha channel addition
     img = add_alpha_channel(img)
 
-    height_img = img
+    height_img = numpy.copy(img) # copy so it will not be inverted
     # invert the matrix so the crack is black and the background is white
     img = invert_matrix(img)
 
