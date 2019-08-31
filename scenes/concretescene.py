@@ -73,7 +73,7 @@ class ConcreteScene(Scene):
     # Override(Scene)
     def _setup_objects(self):
         # add a base primitive mesh. in this case a grid mesh is added at the origin
-        bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/4), y_subdivisions=int(self.resolution/4),
+        bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/2), y_subdivisions=int(self.resolution/2),
                                         location=(0.0, -2.0, 5.5))
                                         
         # default object name is 'Grid'
@@ -125,10 +125,11 @@ class ConcreteScene(Scene):
                 # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
                 if self.isCracked:
                     heightTexPath, img_tex_heights = self.shaderDict[key].sample_texture()
+                    #rand_disp_strenght = np.random.uniform(0.03, 0.5)
                     self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
                     # Negative value is given for displacement strength of crack because displacement has to be in
                     # the opposite direction of the normals in object coordinates.
-                    self.DisplacedCrack.displace(img_tex_heights, disp_strength=-0.01)
+                    self.DisplacedCrack.displace(img_tex_heights, disp_strength=-0.02)
                 else:
                     heightTexPath = self.shaderDict[key].sample_texture()
                     self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
