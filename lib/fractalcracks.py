@@ -108,6 +108,15 @@ def widen_line(img):
 
 
 def construct_matrix(TOTALWIDTH, points):
+    # function defining crack falloff
+    """
+    def get_crack_falloff(num_points, curr_point_index):
+        curr_point_percentage = curr_point_index / float(num_points)
+        falloff = (1 - curr_point_percentag)e**(1.0/40.0)  # falloff function = x^(1/40) from right to left
+        assert(falloff > -0.01) # check that falloff is never below 0 with float error margin
+        assert(falloff < 1.01) # check that falloff is never above 1 with float error margin
+        return falloff
+    """
     max_y = numpy.max(points[:, 1])
     min_x = numpy.min(points[:, 0])
     min_y = numpy.min(points[:, 1])
@@ -119,9 +128,8 @@ def construct_matrix(TOTALWIDTH, points):
         cv2.line(img,
                  (int(p[0] - min_x), int(pad + p[1] - min_y)),
                  (int((points[pidx + 1, 0] - min_x)), int(pad + points[pidx + 1, 1] - min_y)),
-                 (255),
+                 (255), #(int(get_crack_falloff()*255)),
                  1)
-
     return img
 
 
