@@ -37,10 +37,10 @@ class Scene:
 		
         # subdivision of mesh
         if cuts > 100:
-            bpy.ops.mesh.subdivide(number_cuts=100, quadtri=True)
-            bpy.ops.mesh.subdivide(number_cuts=int(cuts/100), quadtri=True)
+            bpy.ops.mesh.subdivide(number_cuts=100, quadtri=False)
+            bpy.ops.mesh.subdivide(number_cuts=int(cuts/100), quadtri=False)
         else:
-            bpy.ops.mesh.subdivide(number_cuts=cuts, quadtri=True)
+            bpy.ops.mesh.subdivide(number_cuts=cuts, quadtri=False)
 
         # go back into object mode
         bpy.ops.object.mode_set(mode='OBJECT')

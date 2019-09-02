@@ -95,7 +95,7 @@ def calculate_normals(img):
 
 
 def widen_line(img):
-    Blur_scales = numpy.array((3, 5))  # need to be odd
+    Blur_scales = numpy.array((3, 5, 7, 9))  # need to be odd
     Random_Blur = Blur_scales[numpy.random.randint(0, len(Blur_scales))]
     img = cv2.GaussianBlur(img, (Random_Blur, Random_Blur), 0)
     # re-normalize the image to maximum range
@@ -115,11 +115,13 @@ def construct_matrix(TOTALWIDTH, points):
     img = numpy.zeros((TOTALWIDTH, TOTALWIDTH), numpy.uint8)
 
     pad = (TOTALWIDTH - (max_y - min_y)) / 2
+    # TODO: think of function that varies 255 in height map across the length of the crack. Point set should be ordered.
     for pidx, p in enumerate(points[:-1]):
+        strength = int((255/len(points))*(pidx+1)) # TODO: replace with something more complex
         cv2.line(img,
                  (int(p[0] - min_x), int(pad + p[1] - min_y)),
                  (int((points[pidx + 1, 0] - min_x)), int(pad + points[pidx + 1, 1] - min_y)),
-                 (255),
+                 (max(50, strength)), # at least 20% visibility
                  1)
 
     return img
