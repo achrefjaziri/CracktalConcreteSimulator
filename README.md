@@ -26,8 +26,9 @@ Note that depending on your OS and Blender version the shortcut "pip" could not 
 
 ### Required external packages for this repository
 * ```opencv-python```
-* ```numpy```
-* ```scipy```
+* ```numpy==1.11```
+* ```scipy==1.2```
+* '''imageio'''
 
 ## Running the code:
 
@@ -42,7 +43,7 @@ Run with:
 
 Example:
 ~~~
-/path/to/blender --background --python generate.py -- --save-images True --num-images 10 --samples 10 --crack True --resolution 1024
+/path/to/blender --background --python generate.py -- --num-images 10 --samples 10 --crack True --resolution 1024
 ~~~
 
 The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 10 samples and with a resolution of 1024x1024. For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
