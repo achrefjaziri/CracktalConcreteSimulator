@@ -1,4 +1,5 @@
 import bpy
+import numpy as np
 import math
 import os
 
@@ -58,20 +59,10 @@ class ConcreteScene(Scene):
                                                   bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'])
         bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.3
 
-    """
-    def _add_modifiers(self, blender_obj):
-        # select given object
-        blender_obj.select = True
-
-        # displacement modifier
-        # TODO: displacement modifier not getting updated.
-        # Need a remove & add modifier handle
-        bpy.ops.object.modifier_add(type='DISPLACE')
-        bpy.data.textures.new('displacement', type='IMAGE')
-    """
 
     # Override(Scene)
     def _setup_objects(self):
+
         # add a base primitive mesh. in this case a grid mesh is added at the origin
         bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/2), y_subdivisions=int(self.resolution/2),
                                         location=(0.0, -2.0, 5.5))
@@ -81,10 +72,25 @@ class ConcreteScene(Scene):
         bpy.data.objects['Grid'].scale = [6.275, 6.275, 6.275]
         bpy.data.objects['Grid'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
+        """
+        # add a base primitive mesh. in this case a plane mesh is added at the origin
+        bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
+        # default object name is 'Plane'. or index 2 in this case
+        # set scale and rotation
+        bpy.data.objects['Plane'].scale = [6.275, 6.275, 6.275]
+        bpy.data.objects['Plane'].rotation_euler = [105 * math.pi / 180, 0.0, 0.0]
+
         # subdivide, so that the vertices can get displaced (instead if just bump-mapping)
         # TODO: Think of adding a cmd line option for lower-end systems to go with bump-map mode only
-        # self.subdivide_object(bpy.data.objects['Grid'], cuts=int(self.resolution/4))
-        #
+        self.subdivide_object(bpy.data.objects['Plane'], cuts=500)
+        """
+
+        # UV unwrap object
+        bpy.data.objects['Grid'].select = True
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.uv.unwrap()
+        bpy.ops.object.editmode_toggle()
+
         self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Grid'], 'concrete_displacement')
         if self.isCracked:
             self.DisplacedCrack = MeshDisplacement(bpy.data.objects['Grid'], 'crack_displacement')
@@ -109,7 +115,6 @@ class ConcreteScene(Scene):
 
         # Link shader to grid object
         bpy.data.objects['Grid'].active_material = bpy.data.materials['concrete']
-        # TODO: sample shader image sources!
 
         # Sample shader values
         shader.sample_texture()
@@ -125,11 +130,11 @@ class ConcreteScene(Scene):
                 # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
                 if self.isCracked:
                     heightTexPath, img_tex_heights = self.shaderDict[key].sample_texture()
-                    #rand_disp_strenght = np.random.uniform(0.03, 0.5)
                     self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
                     # Negative value is given for displacement strength of crack because displacement has to be in
                     # the opposite direction of the normals in object coordinates.
-                    self.DisplacedCrack.displace(img_tex_heights, disp_strength=-0.02)
+                    rand_disp_strenght = np.random.uniform(0.02, 0.04)
+                    self.DisplacedCrack.displace(img_tex_heights, disp_strength=-rand_disp_strenght)
                 else:
                     heightTexPath = self.shaderDict[key].sample_texture()
                     self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
