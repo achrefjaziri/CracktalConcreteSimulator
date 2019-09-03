@@ -54,7 +54,7 @@ class ConcreteScene(Scene):
         # set color from temperature and light intensity
         bpy.data.lamps['Sun'].node_tree.nodes.new("ShaderNodeBlackbody")
         # use a blackbody emission node for the sun and set the temperature
-        bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].inputs['Temperature'].default_value = 6500
+        bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].inputs['Temperature'].default_value = 5800 #6500
         bpy.data.lamps['Sun'].node_tree.links.new(bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].outputs['Color'],
                                                   bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'])
         bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.3
@@ -125,6 +125,11 @@ class ConcreteScene(Scene):
 
     # Override(Scene)
     def update(self):
+
+        # Update Sun rotation
+        rand_sun_rotation_y = np.random.uniform(-30, 30)
+        bpy.data.objects['Sun'].rotation_euler = [59 * math.pi / 180, rand_sun_rotation_y, 0.0]
+
         for key in self.shaderDict:
             try:
                 # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
@@ -133,7 +138,7 @@ class ConcreteScene(Scene):
                     self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
                     # Negative value is given for displacement strength of crack because displacement has to be in
                     # the opposite direction of the normals in object coordinates.
-                    rand_disp_strenght = np.random.uniform(0.02, 0.04)
+                    rand_disp_strenght = np.random.uniform(0.03, 0.05)
                     self.DisplacedCrack.displace(img_tex_heights, disp_strength=-rand_disp_strenght)
                 else:
                     heightTexPath = self.shaderDict[key].sample_texture()

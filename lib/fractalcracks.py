@@ -1,4 +1,5 @@
 import numpy
+import math
 import cv2
 
 
@@ -95,7 +96,7 @@ def calculate_normals(img):
 
 
 def widen_line(img):
-    Blur_scales = numpy.array((3, 5, 7, 9))  # need to be odd
+    Blur_scales = numpy.array((3, 5))  # need to be odd
     Random_Blur = Blur_scales[numpy.random.randint(0, len(Blur_scales))]
     img = cv2.GaussianBlur(img, (Random_Blur, Random_Blur), 0)
     # re-normalize the image to maximum range
@@ -107,16 +108,28 @@ def widen_line(img):
     return img
 
 
+# function defining crack falloff
+"""
+def get_crack_falloff(num_points, curr_point_index):
+    
+    curr_point_percentage = curr_point_index / float(num_points)
+    falloff = (1 - curr_point_percentage)**(1.0/40.0)  # falloff function = x^(1/40) from right to left
+    assert(falloff > -0.01) # check that falloff is never below 0 with float error margin
+    assert(falloff < 1.01) # check that falloff is never above 1 with float error margin
+    return falloff
+"""
+
+
+def get_crack_line_params(num_points, curr_point_index, max_thickness=3):
+    strength = int((255 / num_points) * (curr_point_index + 1))
+    strength = max(50, strength) # do not use values that are too low, 20% at least
+    thickness = int((max_thickness / num_points) * (curr_point_index + 1))
+    thickness = max(1, thickness) # no lines with strength smaller than one
+    return strength, thickness
+
+
 def construct_matrix(TOTALWIDTH, points):
-    # function defining crack falloff
-    """
-    def get_crack_falloff(num_points, curr_point_index):
-        curr_point_percentage = curr_point_index / float(num_points)
-        falloff = (1 - curr_point_percentag)e**(1.0/40.0)  # falloff function = x^(1/40) from right to left
-        assert(falloff > -0.01) # check that falloff is never below 0 with float error margin
-        assert(falloff < 1.01) # check that falloff is never above 1 with float error margin
-        return falloff
-    """
+
     max_y = numpy.max(points[:, 1])
     min_x = numpy.min(points[:, 0])
     min_y = numpy.min(points[:, 1])
@@ -126,13 +139,12 @@ def construct_matrix(TOTALWIDTH, points):
     pad = (TOTALWIDTH - (max_y - min_y)) / 2
     # TODO: think of function that varies 255 in height map across the length of the crack. Point set should be ordered.
     for pidx, p in enumerate(points[:-1]):
-        strength = int((255/len(points))*(pidx+1)) # TODO: replace with something more complex
-        #strength = int(get_crack_falloff(len(points), pidx) * 255) # set max of crack lower or choose random
+        strength, thickness = get_crack_line_params(len(points), pidx, max_thickness=5)
         cv2.line(img,
                  (int(p[0] - min_x), int(pad + p[1] - min_y)),
                  (int((points[pidx + 1, 0] - min_x)), int(pad + points[pidx + 1, 1] - min_y)),
-                 (max(50, strength)), # at least 20% visibility
-                 1)
+                 strength, # at least 20% visibility
+                 1) # # TODO: currently thickness is constant as parameters need to be selected properly
     return img
 
 
