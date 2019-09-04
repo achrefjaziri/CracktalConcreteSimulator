@@ -47,22 +47,38 @@ def run(num_images, n_concrete):
         print("Done...")
 
         print("Rendering...")
-        renderManager.render(camera=bpy.data.objects['Camera'])
+        renderManager.render(
+                            cameraLeft=bpy.data.objects['CameraLeft'], 
+                            cameraRight=bpy.data.objects['CameraRight']
+                            )
         print("Done...")
 
         # save images to folder
         if not os.path.isdir("res"):
             os.mkdir("res")
 
-        res_string = os.path.join('res/render' + str(i)+'.png')
+        # set filenames for storing images
+        res_string = os.path.join('res/render' + str(i) + '.png')
         gt_string = os.path.join('res/gt' + str(i) + '.png')
         normal_string = os.path.join('res/normal' + str(i) + '.png')
+
+        res_string_right = os.path.join('res/render_right' + str(i) + '.png')
+        gt_string_right = os.path.join('res/gt_right' + str(i) + '.png')
+        normal_string_right = os.path.join('res/normal_right' + str(i) + '.png')
+
+        # save images to file
         misc.imsave(res_string, renderManager.result_imgs[-1])
         print("image save done...")
         misc.imsave(normal_string, renderManager.result_normals[-1])
         print("normal map save done...")
         misc.imsave(gt_string, renderManager.result_gt[-1])
         print("ground truth save done...")
+        
+        misc.imsave(res_string_right, renderManager.result_imgs_right[-1])
+        print("image save done...")
+        misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
+        print("normal map save done...")
+
         print("")
 
         # clear the lists of stored results
