@@ -1,6 +1,7 @@
 # Blender python basic scene generation
 
-The generate.py script generates concrete PBR materials from a set of albedo, metallic, roughness and normal maps. 
+The generate.py script generates concrete PBR materials from a set of albedo, metallic, roughness and normal maps.
+An extra height map is used for displacement of mesh vertices. 
 
 ## Installing external modules
 
@@ -32,7 +33,7 @@ Note that depending on your OS and Blender version the shortcut "pip" could not 
 
 ## Running the code:
 
-#### The code was scripted in blender version 2.78c in a Linux OS. Download this specific version from http://download.blender.org/release/Blender2.78/ . It doesn't yet run in the more recent 2.79 version. A updated version is currently being worked on in the dev branch of this repository. 
+#### The code was scripted in blender version 2.79 on a Linux OS. As this version introduced a large change to how PBR rendering works in Blender, previous versions are no longer supported! 
 
 Ensure your are inside the repository folder in the command line. 
 

@@ -1,17 +1,17 @@
-#!/bin/env python
-# coding: utf-8
 import numpy
+import math
 import cv2
+
 
 def kochenize(first_p, second_p, i):
     mu = 0.0
-    sigma = numpy.pi/6.0 #45°
+    sigma = numpy.pi/6.0 # 45°
 
-    AngleCheck = False
-    while AngleCheck == False:
+    angle_check = False
+    while angle_check == False:
         theta = numpy.random.normal(mu, sigma)
-        if theta >= (-1.0 * numpy.pi/4.0) and theta <= numpy.pi/4.0:
-            AngleCheck = True
+        if theta >= (-1.0 * numpy.pi / 4.0) and theta <= numpy.pi / 4.0:
+            angle_check = True
 
     dist_x = second_p[0] - first_p[0]
     dist_y = second_p[1] - first_p[1]
@@ -24,7 +24,8 @@ def kochenize(first_p, second_p, i):
     d = numpy.sqrt(pow(dist_x, 2.0) + pow(dist_y, 2.0))
     h = (d / 6) * numpy.tan(theta)
 
-    p2 = (first_p[0] + dist_x / 2.0 + h * (second_p[1] - first_p[1]) / d, first_p[1] + dist_y / 2.0 - h * (second_p[0] - first_p[0]) / d)
+    p2 = (first_p[0] + dist_x / 2.0 + h * (second_p[1] - first_p[1]) / d,
+          first_p[1] + dist_y / 2.0 - h * (second_p[0] - first_p[0]) / d)
 
     return p1, p2, p3
 
@@ -43,14 +44,15 @@ def koch(depth, width):
             st = s*stepwidth
             a = (points[st][0], points[st][1])
             b = (points[st+stepwidth][0], points[st+stepwidth][1])
-            n1 = st + (stepwidth)//4
-            n2 = st + 2*(stepwidth)//4
-            n3 = st + 3*((stepwidth)//4)
+            n1 = st + stepwidth//4
+            n2 = st + 2*stepwidth//4
+            n3 = st + 3*(stepwidth//4)
             points[n1], points[n2], points[n3] = kochenize(a,b, depth)
 
         stepwidth /= 4
         stepwidth = int(stepwidth)
     return points
+
 
 def random_rotate(img):
     cols, rows = img.shape
@@ -60,6 +62,7 @@ def random_rotate(img):
 
     return img
 
+
 def random_translate(img, TOTALWIDTH):
     cols, rows = img.shape
     RandomTranslation = numpy.random.uniform(-TOTALWIDTH / 2, TOTALWIDTH / 2)
@@ -67,6 +70,7 @@ def random_translate(img, TOTALWIDTH):
     img = cv2.warpAffine(img, MTrans, (cols, rows))
 
     return img
+
 
 def calculate_normals(img):
     # make sure to convert image to float otherwise numpy clips gradient to positive values.
@@ -90,16 +94,42 @@ def calculate_normals(img):
 
     return Normals
 
+
 def widen_line(img):
-    Blur_scales = numpy.array((1, 3, 5))  # need to be odd
+    Blur_scales = numpy.array((3, 5))  # need to be odd
     Random_Blur = Blur_scales[numpy.random.randint(0, len(Blur_scales))]
     img = cv2.GaussianBlur(img, (Random_Blur, Random_Blur), 0)
     # re-normalize the image to maximum range
-    img = 255 * (img.astype(float) / img.max())
+    if img.max() != 0:
+        img = 255 * (img.astype(float) / img.max())
+    else:
+        print ( "img.max in widen_line of fractalcracks.py is: " + str(img.max()) )
 
     return img
 
+
+# function defining crack falloff
+"""
+def get_crack_falloff(num_points, curr_point_index):
+    
+    curr_point_percentage = curr_point_index / float(num_points)
+    falloff = (1 - curr_point_percentage)**(1.0/40.0)  # falloff function = x^(1/40) from right to left
+    assert(falloff > -0.01) # check that falloff is never below 0 with float error margin
+    assert(falloff < 1.01) # check that falloff is never above 1 with float error margin
+    return falloff
+"""
+
+
+def get_crack_line_params(num_points, curr_point_index, max_thickness=3):
+    strength = int((255 / num_points) * (curr_point_index + 1))
+    strength = max(50, strength) # do not use values that are too low, 20% at least
+    thickness = int((max_thickness / num_points) * (curr_point_index + 1))
+    thickness = max(1, thickness) # no lines with strength smaller than one
+    return strength, thickness
+
+
 def construct_matrix(TOTALWIDTH, points):
+
     max_y = numpy.max(points[:, 1])
     min_x = numpy.min(points[:, 0])
     min_y = numpy.min(points[:, 1])
@@ -107,23 +137,27 @@ def construct_matrix(TOTALWIDTH, points):
     img = numpy.zeros((TOTALWIDTH, TOTALWIDTH), numpy.uint8)
 
     pad = (TOTALWIDTH - (max_y - min_y)) / 2
+    # TODO: think of function that varies 255 in height map across the length of the crack. Point set should be ordered.
     for pidx, p in enumerate(points[:-1]):
+        strength, thickness = get_crack_line_params(len(points), pidx, max_thickness=5)
         cv2.line(img,
                  (int(p[0] - min_x), int(pad + p[1] - min_y)),
                  (int((points[pidx + 1, 0] - min_x)), int(pad + points[pidx + 1, 1] - min_y)),
-                 (255),
-                 1)
-
+                 strength, # at least 20% visibility
+                 1) # # TODO: currently thickness is constant as parameters need to be selected properly
     return img
+
 
 def invert_matrix(img):
-    img[:,:,0:3] = 1 - img[:,:,0:3]
+    img[:, :, 0:3] = 1 - img[:, :, 0:3]
     return img
+
 
 def add_alpha_channel(img):
     # convert grayscale to BGRA
     img = numpy.repeat(img[:, :, numpy.newaxis], 4, axis=2)
     return img
+
 
 def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     points = koch(DEPTH, TOTALWIDTH)
@@ -147,7 +181,9 @@ def generate_fractal_cracks(TOTALWIDTH, DEPTH):
     # alpha channel addition
     img = add_alpha_channel(img)
 
+    height_img = numpy.copy(img) # copy so it will not be inverted
     # invert the matrix so the crack is black and the background is white
     img = invert_matrix(img)
 
-    return img, img, normals
+    # This returns ground truth, roughness, normal and height maps.
+    return img, img, normals, height_img

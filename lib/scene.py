@@ -1,42 +1,58 @@
 import bpy
-import math
-import os
-import sys
-import numpy as np
-import colorsys
 
 
-class Scene():
+class Scene:
     def __init__(self):
-        self.shaderDict = {};
+        self.shaderDict = {}
 
-        self.resetSceneToEmpty();
-        self.setUp();
+        self._reset_scene()
+        self._setup_scene()
 
-    def setUp(self):
-        self._setUpCamera();
-        self._setUpLighting();
-        self._setUpObjects();
-        self._setUpShader();
+    def _setup_scene(self):
+        self._setup_camera()
+        self._setup_lighting()
+        self._setup_objects()
+        self._setup_shader()
 
-    def _setUpCamera(self):
+    def _setup_camera(self):
         raise NotImplementedError
 
-    def _setUpLighting(self):
+    def _setup_lighting(self):
         raise NotImplementedError
 
-    def _setUpObjects(self):
+    def _setup_objects(self):
         raise NotImplementedError
 
-    def _setUpShader(self):
-        pass;
+    def _setup_shader(self):
+        pass
 
-    def resetSceneToEmpty(self):
+    def subdivide_object(self, blender_obj, cuts=100):
+        # TODO: potentially move this to concretescene
+        # select given object
+        blender_obj.select = True
+
+        # go into edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+		
+        # subdivision of mesh
+        if cuts > 100:
+            bpy.ops.mesh.subdivide(number_cuts=100, quadtri=False)
+            bpy.ops.mesh.subdivide(number_cuts=int(cuts/100), quadtri=False)
+        else:
+            bpy.ops.mesh.subdivide(number_cuts=cuts, quadtri=False)
+
+        # go back into object mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        blender_obj.select = False
+
+    def _reset_scene(self):
         check = bpy.data.objects is not None
         # remove pre-existing objects from blender
-        if check == True:
-            for object in bpy.data.objects:
-                object.select = True
+        if check:
+            for obj in bpy.data.objects:
+                obj.select = True
                 bpy.ops.object.delete()
                 # clear mesh and material data. removing objects alone is not necessary
                 for mesh in bpy.data.meshes:
@@ -48,5 +64,5 @@ class Scene():
                 for lamp in bpy.data.lamps:
                     bpy.data.lamps.remove(lamp, do_unlink=True)
 
-    def update(self):
-        pass;
+    def update(self, heighttexpath):
+        pass

@@ -1,151 +1,148 @@
 import bpy
+import numpy as np
 import math
 import os
-import sys
-import numpy as np
-import colorsys
 
 from lib.scene import Scene
 from lib.crackshader import CrackShader
 from lib.mastershader import MasterShader
+from lib.meshmodifiers import MeshDisplacement
+
 
 class ConcreteScene(Scene):
-    def __init__(self, resolution, isRenderCracks):
-        # attributes of the scene used in setup need to be called befor parent init!
-        # otherwise they are not known to the overrinding function!
-        self.resolution = resolution;
+    def __init__(self, resolution, is_cracked, path):
+        # attributes of the scene used in setup need to be called before parent init!
+        # otherwise they are not known to the overriding function!
+        self.resolution = resolution
 
-        self.cracked = isRenderCracks;
-        
-        super(ConcreteScene, self).__init__();
+        self.isCracked = is_cracked
 
-    #Override(Scene)
-    def _setUpCamera(self):
+        self.DisplacedMesh = None
+
+        self.DisplacedCrack = None
+
+        self.pathname = path
+        super(ConcreteScene, self).__init__()
+
+    # Override(Scene)
+    def _setup_camera(self):
         # add camera
         bpy.ops.object.camera_add()
         # location of camera
         bpy.data.objects['Camera'].location = (0.0, -15.0, 2.0)
         # rotation of camera. x axis rotation is 105.125 degrees in this example
         bpy.data.objects['Camera'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
-        # scale of camera usually unaltered.
+        # scale of camera usually unaltered
         bpy.data.objects['Camera'].scale = [1.0, 1.0, 1.0]
-        # by default camera type is perspective. uncomment below line for changing camera to orthographic.
-        #bpy.data.cameras['Camera'].type='ORTHO'     #PERSP for perspective. default orthographic scale is 7.314
         # focal length of camera
         bpy.data.cameras['Camera'].lens = 35.00
         # focal length unit
-        bpy.data.cameras['Camera'].lens_unit = 'MILLIMETERS' #FOV for field of view
-        # note: you can add camera presets like samsung galaxy s4.
-        # look at documentation and uncomment below line and modify accordinly. below line not tested
-        #bpy.ops.script.execute_preset(filepath="yourpathlocation")
+        bpy.data.cameras['Camera'].lens_unit = 'MILLIMETERS'
 
-    #Override(Scene)
-    def _setUpLighting(self):
-        # add lamp
+    # Override(Scene)
+    def _setup_lighting(self):
+        # add light source
         bpy.ops.object.lamp_add(type='SUN')
-        # change sun location.
-        bpy.data.objects['Sun'].location = [0.0,-5.0,5.0]
-        bpy.data.objects['Sun'].rotation_euler = [59*math.pi/180, 0.0, 0.0]
-
-        # you can modify object names. example given below. uncomment if needed.
-        # if uncommented upcoming commands should also be modified accordingly
-        #bpy.data.lamps[0].name = 'Sun'
-        #bpy.data.objects['Sun'].name = 'Sun'
-        # you can add more light sources. uncomment below line for example light source
-        #bpy.ops.object.lamp_add(type='POINT')
-
+        # change sun location
+        bpy.data.objects['Sun'].location = [0.0, -5.0, 5.0]
         # change rotation of sun's direction vector.
         bpy.data.objects['Sun'].rotation_euler = [59*math.pi/180, 0.0, 0.0]
-        # in order to change color, strength of sun, we have to use nodes.
-        # also node editing is quite useful for designing layers to your rendering
+
+        # use nodes for blackbody
         bpy.data.lamps['Sun'].use_nodes = True
-        # in the above statement we used 'Lamp' instead of index 0.
-        # The default name of lamps is 'Lamp' as described in the above comments.
 
-        # set color and strength value of sun using nodes.
-        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0] # these are no good color values for a sun!
-        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.0
+        # set color from temperature and light intensity
+        bpy.data.lamps['Sun'].node_tree.nodes.new("ShaderNodeBlackbody")
+        # use a blackbody emission node for the sun and set the temperature
+        bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].inputs['Temperature'].default_value = 5800 #6500
+        bpy.data.lamps['Sun'].node_tree.links.new(bpy.data.lamps['Sun'].node_tree.nodes['Blackbody'].outputs['Color'],
+                                                  bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Color'])
+        bpy.data.lamps['Sun'].node_tree.nodes['Emission'].inputs['Strength'].default_value = 3.3
 
 
-    #Override(Scene)
-    def _setUpObjects(self):
-        # add a base primitive mesh. in this case a plane mesh is added at origin
+    # Override(Scene)
+    def _setup_objects(self):
+
+        # add a base primitive mesh. in this case a grid mesh is added at the origin
+        bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/2), y_subdivisions=int(self.resolution/2),
+                                        location=(0.0, -2.0, 5.5))
+                                        
+        # default object name is 'Grid'
+        # set scale and rotation
+        bpy.data.objects['Grid'].scale = [6.275, 6.275, 6.275]
+        bpy.data.objects['Grid'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
+
+        """
+        # add a base primitive mesh. in this case a plane mesh is added at the origin
         bpy.ops.mesh.primitive_plane_add(location=(0.0, -2.0, 5.5))
         # default object name is 'Plane'. or index 2 in this case
         # set scale and rotation
         bpy.data.objects['Plane'].scale = [6.275, 6.275, 6.275]
-        bpy.data.objects['Plane'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
+        bpy.data.objects['Plane'].rotation_euler = [105 * math.pi / 180, 0.0, 0.0]
 
-    #Override(Scene)
-    def _setUpShader(self, albedoval=[0.5, 0.5, 0.5], locationval=[0, 0, 0], rotationval=[0, 0, 0], scaleval=[1, 1, 1], concrete=1):
-        albedoPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/albedo' + str(concrete) + '.png')
-        roughnessPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/roughness' + str(concrete) + '.png');
-        normalPath = os.path.join('concretedictionary/concrete' + str(concrete) + '/normal' + str(concrete) + '.png')
-        
-        
-        #print("Init crackshader");
-        #shadername = "concrete";
-        #shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, self.resolution);
-        #self.shaderDict[shadername] = shader;
-        #print("Done...");
+        # subdivide, so that the vertices can get displaced (instead if just bump-mapping)
+        # TODO: Think of adding a cmd line option for lower-end systems to go with bump-map mode only
+        self.subdivide_object(bpy.data.objects['Plane'], cuts=500)
+        """
 
-        #print("Link shader to plane object");
-        #bpy.data.objects['Plane'].active_material = bpy.data.materials[shadername];
-        #print("Done...");
+        # UV unwrap object
+        bpy.data.objects['Grid'].select = True
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.uv.unwrap()
+        bpy.ops.object.editmode_toggle()
 
-        #print("Apply shader to obj mesh");
-        #shader.applyTo("Plane");
-        #print("Done...");
+        self.DisplacedMesh = MeshDisplacement(bpy.data.objects['Grid'], 'concrete_displacement')
+        if self.isCracked:
+            self.DisplacedCrack = MeshDisplacement(bpy.data.objects['Grid'], 'crack_displacement')
 
-        
-        if(not self.cracked):
-            print("Init mastershader");
-            shadername = "concrete";
-            shader = MasterShader(shadername, albedoPath, roughnessPath, normalPath);
-            self.shaderDict[shadername] = shader;
-            print("Done...");
+    # Override(Scene)
+    def _setup_shader(self):
+        albedo_path = os.path.join(self.pathname[0] + '_Base_Color' + self.pathname[1])
+        roughness_path = os.path.join(self.pathname[0] + '_Roughness' + self.pathname[1])
+        normal_path = os.path.join(self.pathname[0] + '_Normal' + self.pathname[1])
+        height_path = os.path.join(self.pathname[0] + '_Height' + self.pathname[1])
+        ao_Path = os.path.join(self.pathname[0] + '_Ambient_Occlusion' + self.pathname[1])
+        metallic_Path = os.path.join(self.pathname[0] + '_Metallic' + self.pathname[1])
 
-            print("Link shader to plane object");
-            bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
-            print("Done...");
+        shadername = "concrete"
 
-            # TODO: sample shader image sources!
+        if self.isCracked:
+            shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, height_path, self.resolution)
+        else:
+            shader = MasterShader(shadername, albedo_path, roughness_path, normal_path, height_path)
 
-            print("Sample shader values");
-            shader.sampleTexture();
-            print("Done...");
-            
-            print("Apply shader to obj mesh");
-            shader.applyTo("Plane");
-            print("Done...");
-            
-        elif(self.cracked):
-            print("Init crackshader");
-            shadername = "concrete";
-            shader = CrackShader(shadername, albedoPath, roughnessPath, normalPath, self.resolution);
-            self.shaderDict[shadername] = shader;
-            print("Done...");
+        self.shaderDict[shadername] = shader
 
-            print("Link shader to plane object");
-            bpy.data.objects['Plane'].active_material = bpy.data.materials['concrete'];
-            print("Done...");
+        # Link shader to grid object
+        bpy.data.objects['Grid'].active_material = bpy.data.materials['concrete']
 
-            # TODO: sample shader image sources!
+        # Sample shader values
+        shader.sample_texture()
 
-            print("Sample shader values");
-            shader.sampleTexture();
-            print("Done...");
-            
-            print("Apply shader to obj mesh");
-            shader.applyTo("Plane");
-            print("Done...");
-        
+        # Apply shader to obj mesh
+        # TODO: UV unwrapping only happening once!
+        shader.apply_to_blender_object(bpy.data.objects['Grid'])
 
-    #Override(Scene)
+    # Override(Scene)
     def update(self):
+
+        # Update Sun rotation
+        rand_sun_rotation_y = np.random.uniform(-30, 30)
+        bpy.data.objects['Sun'].rotation_euler = [59 * math.pi / 180, rand_sun_rotation_y, 0.0]
+
         for key in self.shaderDict:
             try:
-                for key in self.shaderDict:
-                    self.shaderDict[key].sampleTexture();
+                # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.
+                if self.isCracked:
+                    heightTexPath, img_tex_heights = self.shaderDict[key].sample_texture()
+                    self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
+                    # Negative value is given for displacement strength of crack because displacement has to be in
+                    # the opposite direction of the normals in object coordinates.
+                    rand_disp_strenght = np.random.uniform(0.03, 0.05)
+                    self.DisplacedCrack.displace(img_tex_heights, disp_strength=-rand_disp_strenght)
+                else:
+                    heightTexPath = self.shaderDict[key].sample_texture()
+                    self.DisplacedMesh.displace(heightTexPath, disp_strength=0.05)
             except Exception:
-                pass;
+                pass
+
