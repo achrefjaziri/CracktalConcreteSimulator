@@ -21,13 +21,35 @@ class RenderManager():
         self.result_normals_right = []
         self.result_gt_right = []
 
-
         self.scene = None
 
     def setScene(self, scene):
         self.scene = scene
 
-    def render(self, cameraLeft, cameraRight):
+    def render(self, camera):
+        bpy.data.scenes['Scene'].frame_end = self.frames
+        bpy.data.scenes['Scene'].render.filepath = self.path
+        bpy.data.scenes['Scene'].cycles.samples = self.samples
+        bpy.data.scenes['Scene'].render.resolution_x = self.resolution
+        bpy.data.scenes['Scene'].render.resolution_y = self.resolution
+        bpy.data.scenes['Scene'].render.resolution_percentage = 100
+
+        # before rendering, set the sceen camera to the camera that you chose
+        #bpy.data.scenes['Scene'].camera = cameraLeft
+
+        # set render tile sizes
+        bpy.data.scenes['Scene'].render.tile_x = self.tilesize
+        bpy.data.scenes['Scene'].render.tile_y = self.tilesize
+
+        # render color image left
+        self.render_img(filepath=self.path, camera=camera, save_list=self.result_imgs)
+        # render color image right
+        self.render_img(filepath=self.path, camera=camera, save_list=self.result_imgs_right)
+
+        # render groundtruth
+        self.render_gt(filepath=self.path, camera=camera, crackflag=self.cracked, save_list=self.resu$
+
+    def render_stereo(self, cameraLeft, cameraRight):
         bpy.data.scenes['Scene'].frame_end = self.frames
         bpy.data.scenes['Scene'].render.filepath = self.path
         bpy.data.scenes['Scene'].cycles.samples = self.samples

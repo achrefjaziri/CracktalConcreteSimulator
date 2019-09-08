@@ -12,6 +12,7 @@ if not dir in sys.path:
 
 from lib.cmdparser import parse
 from scenes.concretescene import ConcreteScene
+from scenes.concretescene_stereo import ConcreteSceneStereo
 from lib.rendermanager import RenderManager
 
 # Find out if system has GPU and if it has at least one GPU, it is going to be set
@@ -25,7 +26,7 @@ if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) 
     UseGPU = True
 
 
-def run(num_images, n_concrete):
+def run(num_images, n_concrete, args=None):
     for i in range(num_images):
         # randomly choose concrete texture map set
         concrete = random.randint(0, n_concrete-1)
@@ -46,11 +47,17 @@ def run(num_images, n_concrete):
         scene.update()
         print("Done...")
 
+        
         print("Rendering...")
-        renderManager.render(
-                            cameraLeft=bpy.data.objects['CameraLeft'], 
-                            cameraRight=bpy.data.objects['CameraRight']
-                            )
+        if(args.stereo_camera):
+            print("Rendering stereo...")
+            renderManager.render_stereo(
+                                cameraLeft=bpy.data.objects['CameraLeft'], 
+                                cameraRight=bpy.data.objects['CameraRight']
+                                )
+        else:
+            print("Rendering single...")
+            renderManager.render(camera=bpy.data.objects['Camera']
         print("Done...")
 
         # save images to folder
@@ -136,7 +143,12 @@ print("Done...")
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
 print("Setting up scene...")
 # print args.crack
-scene = ConcreteScene(args.resolution, args.crack, concrete_name)
+if(args.stereo_camera):
+    print("Using stereo camera scene setup..")
+    scene = ConcreteSceneStereo(args.resolution, args.crack, concrete_name)
+else:
+    print("Using single camera scene setup..")
+    scene = ConcreteScene(args.resolution, args.crack, concrete_name)
 print("Done...")
 
 print("Init render manager...")
@@ -146,5 +158,5 @@ renderManager.setScene(scene)
 print("Done...")
 
 print("Rendering...")
-run(args.num_images, n_concrete)
+run(args.num_images, n_concrete, args)
 print("Done...")

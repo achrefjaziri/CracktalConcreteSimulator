@@ -9,7 +9,7 @@ from lib.mastershader import MasterShader
 from lib.meshmodifiers import MeshDisplacement
 
 
-class ConcreteScene(Scene):
+class ConcreteSceneStereo(Scene):
     def __init__(self, resolution, is_cracked, path):
         # attributes of the scene used in setup need to be called before parent init!
         # otherwise they are not known to the overriding function!
@@ -30,18 +30,35 @@ class ConcreteScene(Scene):
         # add camera
         bpy.ops.object.camera_add()
         # rename camera
-        bpy.data.cameras['Camera'].name = 'Camera'
-        bpy.data.objects['Camera'].name = 'Camera'
+        bpy.data.cameras['Camera'].name = 'CameraLeft'
+        bpy.data.objects['Camera'].name = 'CameraLeft'
         # location of camera
-        bpy.data.objects['Camera'].location = (-2.0, -15.0, 2.0)
+        bpy.data.objects['CameraLeft'].location = (-2.0, -14.0, 2.0)
         # rotation of camera. x axis rotation is 105.125 degrees in this example
-        bpy.data.objects['Camera'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
+        bpy.data.objects['CameraLeft'].rotation_euler = [105.125*math.pi/180, 0.0, -8*math.pi/180]
         # scale of camera usually unaltered
-        bpy.data.objects['Camera'].scale = [1.0, 1.0, 1.0]
+        bpy.data.objects['CameraLeft'].scale = [1.0, 1.0, 1.0]
         # focal length of camera
-        bpy.data.cameras['Camera'].lens = 35.00
+        bpy.data.cameras['CameraLeft'].lens = 35.00
         # focal length unit
-        bpy.data.cameras['Camera'].lens_unit = 'MILLIMETERS'
+        bpy.data.cameras['CameraLeft'].lens_unit = 'MILLIMETERS'
+
+        # Right Camera
+        # add camera
+        bpy.ops.object.camera_add()
+        # rename camera
+        bpy.data.cameras['Camera'].name = 'CameraRight'
+        bpy.data.objects['Camera'].name = 'CameraRight'
+        # location of camera
+        bpy.data.objects['CameraRight'].location = (2.0, -14, 2.0)
+        # rotation of camera. x axis rotation is 105.125 degrees in this example
+        bpy.data.objects['CameraRight'].rotation_euler = [105.125*math.pi/180, 0.0, 8*math.pi/180]
+        # scale of camera usually unaltered
+        bpy.data.objects['CameraRight'].scale = [1.0, 1.0, 1.0]
+        # focal length of camera
+        bpy.data.cameras['CameraRight'].lens = 35.00
+        # focal length unit
+        bpy.data.cameras['CameraRight'].lens_unit = 'MILLIMETERS'
 
     # Override(Scene)
     def _setup_lighting(self):
