@@ -56,8 +56,6 @@ StereoCamera:
 
 The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 10 samples and with a resolution of 1024x1024. For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
 
-The concrete dictionary folder which contains all the concrete maps will be downloaded from a dropbox link if you haven't downloaded it already. The python script uses console commands wget and unzip to download and unzip the required folder. Install 'wget' and 'unzip' using command line prompt if you do not already have them in your linux system.
-
-If you do not want to download the dropbox file using the python script, here is the dropbox link:
-[Drop box link for concrete maps](https://www.dropbox.com/s/y1j6hc42sl6uidi/concretedictionary.zip?dl=1)
+The concrete textures can be found in the [AEROBIConcreteTextures](https://git.ccc.cs.uni-frankfurt.de/AEROBI/AEROBIConcreteTextures) repository.
+You need to download/clone the repository into the current repository (i.e. such that the concrete_textures folder is at the top level of the repository)
 
