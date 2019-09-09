@@ -57,7 +57,7 @@ def run(num_images, n_concrete, args=None):
                                 )
         else:
             print("Rendering single...")
-            renderManager.render(camera=bpy.data.objects['Camera']
+            renderManager.render(camera=bpy.data.objects['Camera'])
         print("Done...")
 
         # save images to folder
@@ -80,11 +80,12 @@ def run(num_images, n_concrete, args=None):
         print("normal map save done...")
         misc.imsave(gt_string, renderManager.result_gt[-1])
         print("ground truth save done...")
-        
-        misc.imsave(res_string_right, renderManager.result_imgs_right[-1])
-        print("image save done...")
-        misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
-        print("normal map save done...")
+        # save images for stereo setup        
+        if(args.stereo_camera):
+            misc.imsave(res_string_right, renderManager.result_imgs_right[-1])
+            print("image save done...")
+            misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
+            print("normal map save done...")
 
         print("")
 

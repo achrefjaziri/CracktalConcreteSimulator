@@ -33,7 +33,7 @@ class ConcreteScene(Scene):
         bpy.data.cameras['Camera'].name = 'Camera'
         bpy.data.objects['Camera'].name = 'Camera'
         # location of camera
-        bpy.data.objects['Camera'].location = (-2.0, -15.0, 2.0)
+        bpy.data.objects['Camera'].location = (0.0, -15.0, 2.0)
         # rotation of camera. x axis rotation is 105.125 degrees in this example
         bpy.data.objects['Camera'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
         # scale of camera usually unaltered

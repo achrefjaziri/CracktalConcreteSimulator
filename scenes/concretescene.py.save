@@ -9,7 +9,7 @@ from lib.mastershader import MasterShader
 from lib.meshmodifiers import MeshDisplacement
 
 
-class ConcreteSceneStereo(Scene):
+class ConcreteScene(Scene):
     def __init__(self, resolution, is_cracked, path):
         # attributes of the scene used in setup need to be called before parent init!
         # otherwise they are not known to the overriding function!
@@ -22,7 +22,7 @@ class ConcreteSceneStereo(Scene):
         self.DisplacedCrack = None
 
         self.pathname = path
-        super(ConcreteSceneStereo, self).__init__()
+        super(ConcreteScene, self).__init__()
 
     # Override(Scene)
     def _setup_camera(self):
@@ -31,7 +31,7 @@ class ConcreteSceneStereo(Scene):
         bpy.ops.object.camera_add()
         # rename camera
         bpy.data.cameras['Camera'].name = 'CameraLeft'
-        bpy.data.objects['Camera'].name = 'CameraLeft'
+        bpy.data.objects['Camera'].
         # location of camera
         bpy.data.objects['CameraLeft'].location = (-2.0, -14.0, 2.0)
         # rotation of camera. x axis rotation is 105.125 degrees in this example

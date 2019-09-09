@@ -43,11 +43,12 @@ class RenderManager():
 
         # render color image left
         self.render_img(filepath=self.path, camera=camera, save_list=self.result_imgs)
-        # render color image right
-        self.render_img(filepath=self.path, camera=camera, save_list=self.result_imgs_right)
+        
+        # render normalmap
+        self.render_np(filepath=self.path, camera=camera, save_list=self.result_normals)
 
         # render groundtruth
-        self.render_gt(filepath=self.path, camera=camera, crackflag=self.cracked, save_list=self.resu$
+        self.render_gt(filepath=self.path, camera=camera, crackflag=self.cracked, save_list=self.result_gt)
 
     def render_stereo(self, cameraLeft, cameraRight):
         bpy.data.scenes['Scene'].frame_end = self.frames
