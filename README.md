@@ -34,8 +34,9 @@ Note that depending on your OS and Blender version the shortcut "pip" could not 
 * ```fnmatch```
 
 ## Running the code:
+#### The concrete textures can be found in the [AEROBIConcreteTextures](https://git.ccc.cs.uni-frankfurt.de/AEROBI/AEROBIConcreteTextures) repository. You need to download/clone the repository into the current repository (i.e. such that the concrete_textures folder is at the top level)
 
-#### The code was scripted in blender version 2.79 on a Linux OS. As this version introduced a large change to how PBR rendering works in Blender, previous versions are no longer supported! 
+The code was scripted in blender version 2.79 on a Linux OS. As this version introduced a large change to how PBR rendering works in Blender, previous versions are no longer supported! 
 
 Ensure your are inside the repository folder in the command line. 
 
@@ -56,6 +57,5 @@ StereoCamera:
 
 The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 10 samples and with a resolution of 1024x1024. For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
 
-The concrete textures can be found in the [AEROBIConcreteTextures](https://git.ccc.cs.uni-frankfurt.de/AEROBI/AEROBIConcreteTextures) repository.
-You need to download/clone the repository into the current repository (i.e. such that the concrete_textures folder is at the top level of the repository)
+
 
