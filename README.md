@@ -47,15 +47,11 @@ Run with:
 Example:
 MonoCamera:
 ~~~
-<<<<<<< HEAD
-/path/to/blender --background --python generate.py -- --num-images 10 --samples 10 --crack True --resolution 1024
-=======
 /path/to/blender --background --python generate.py -- --num-images 10 --samples 10 --crack --resolution 1024
 ~~~
 StereoCamera:
 ~~~
 /home/timm/Blender/blender_2.79b/blender --background --python generate.py -- --num-images 10 --samples 10 --crack --resolution 1024 --path ./concrete_textures/ --stereo_camera
->>>>>>> dev/stereoCameraSetup
 ~~~
 
 The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 10 samples and with a resolution of 1024x1024. For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
