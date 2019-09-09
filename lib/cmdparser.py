@@ -27,8 +27,10 @@ def parse(argv):
                         metavar="I", help="number of images to render (default 100)")
     parser.add_argument("-s", "--samples", default=6, type=int,
                         metavar="S", help="number of samples to render (default 6)")
-    parser.add_argument("-c", "--crack", default=False, type=bool,
-                        metavar="C", help="whereter shall be cracks rendered into the images")
+    parser.add_argument("--crack", action='store_true', default=False,
+                      	help="whether shall be cracks rendered into the images")
+    parser.add_argument("--stereo_camera", action='store_true', default=False,
+    					help="whether to use stereo camera setup")
     parser.add_argument("-dp", "--path", metavar="Path", default ="/concrete_textures",
                         help="path of your concrete dictionary")
 

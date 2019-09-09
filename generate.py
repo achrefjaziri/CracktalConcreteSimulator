@@ -12,6 +12,7 @@ if not dir in sys.path:
 
 from lib.cmdparser import parse
 from scenes.concretescene import ConcreteScene
+from scenes.concretescene_stereo import ConcreteSceneStereo
 from lib.rendermanager import RenderManager
 
 # Find out if system has GPU and if it has at least one GPU, it is going to be set
@@ -25,7 +26,7 @@ if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) 
     UseGPU = True
 
 
-def run(num_images, n_concrete):
+def run(num_images, n_concrete, args=None):
     for i in range(num_images):
         # randomly choose concrete texture map set
         concrete = random.randint(0, n_concrete-1)
@@ -46,23 +47,46 @@ def run(num_images, n_concrete):
         scene.update()
         print("Done...")
 
+        
         print("Rendering...")
-        renderManager.render(camera=bpy.data.objects['Camera'])
+        if(args.stereo_camera):
+            print("Rendering stereo...")
+            renderManager.render_stereo(
+                                cameraLeft=bpy.data.objects['CameraLeft'], 
+                                cameraRight=bpy.data.objects['CameraRight']
+                                )
+        else:
+            print("Rendering single...")
+            renderManager.render(camera=bpy.data.objects['Camera'])
         print("Done...")
 
         # save images to folder
         if not os.path.isdir("res"):
             os.mkdir("res")
 
-        res_string = os.path.join('res/render' + str(i)+'.png')
+        # set filenames for storing images
+        res_string = os.path.join('res/render' + str(i) + '.png')
         gt_string = os.path.join('res/gt' + str(i) + '.png')
         normal_string = os.path.join('res/normal' + str(i) + '.png')
+
+        res_string_right = os.path.join('res/render_right' + str(i) + '.png')
+        gt_string_right = os.path.join('res/gt_right' + str(i) + '.png')
+        normal_string_right = os.path.join('res/normal_right' + str(i) + '.png')
+
+        # save images to file
         misc.imsave(res_string, renderManager.result_imgs[-1])
         print("image save done...")
         misc.imsave(normal_string, renderManager.result_normals[-1])
         print("normal map save done...")
         misc.imsave(gt_string, renderManager.result_gt[-1])
         print("ground truth save done...")
+        # save images for stereo setup        
+        if(args.stereo_camera):
+            misc.imsave(res_string_right, renderManager.result_imgs_right[-1])
+            print("image save done...")
+            misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
+            print("normal map save done...")
+
         print("")
 
         # clear the lists of stored results
@@ -120,7 +144,12 @@ print("Done...")
 # set samples to 1 for debugging. 6 to 10 samples are usually sufficient for visually pleasing render results
 print("Setting up scene...")
 # print args.crack
-scene = ConcreteScene(args.resolution, args.crack, concrete_name)
+if(args.stereo_camera):
+    print("Using stereo camera scene setup..")
+    scene = ConcreteSceneStereo(args.resolution, args.crack, concrete_name)
+else:
+    print("Using single camera scene setup..")
+    scene = ConcreteScene(args.resolution, args.crack, concrete_name)
 print("Done...")
 
 print("Init render manager...")
@@ -130,5 +159,5 @@ renderManager.setScene(scene)
 print("Done...")
 
 print("Rendering...")
-run(args.num_images, n_concrete)
+run(args.num_images, n_concrete, args)
 print("Done...")
