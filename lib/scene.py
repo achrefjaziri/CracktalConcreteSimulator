@@ -5,14 +5,23 @@ class Scene:
     def __init__(self):
         self.shaderDict = {}
 
+        self.compositionNodeTree = None
+        self.compositionNodeTreeLinks = None
+
         self._reset_scene()
         self._setup_scene()
 
     def _setup_scene(self):
+        # Activate scene compositing nodes
+        bpy.context.scene.use_nodes = True
+        # Set scene units to metric
+        bpy.context.scene.unit_settings.system = "METRIC"
+        
         self._setup_camera()
         self._setup_lighting()
         self._setup_objects()
         self._setup_shader()
+        self._setup_scene_composition()
 
     def _setup_camera(self):
         raise NotImplementedError
@@ -25,6 +34,11 @@ class Scene:
 
     def _setup_shader(self):
         pass
+
+    def _setup_scene_composition(self):
+        self.compositionNodeTree = bpy.context.scene.node_tree
+        self.compositionNodeTreeLinks = self.compositionNodeTree.links
+        return
 
     def subdivide_object(self, blender_obj, cuts=100):
         # TODO: potentially move this to concretescene

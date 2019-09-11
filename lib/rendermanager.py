@@ -1,7 +1,9 @@
 import bpy
 import numpy as np
 import imageio
-
+import os
+#import OpenEXR
+#import Imath
 
 class RenderManager():
     def __init__(self, path, frames, samples, resolution, tilesize, cracked):
@@ -16,6 +18,8 @@ class RenderManager():
         self.result_imgs = []
         self.result_normals = []
         self.result_gt = []
+        self.result_depth = []
+        self.result_depth_counter = 0
 
         self.result_imgs_right = []
         self.result_normals_right = []
@@ -49,6 +53,10 @@ class RenderManager():
 
         # render groundtruth
         self.render_gt(filepath=self.path, camera=camera, crackflag=self.cracked, save_list=self.result_gt)
+
+        # render depth
+        self.render_depth(filepath=self.path, camera=camera, save_list=self.result_depth)
+
 
     def render_stereo(self, cameraLeft, cameraRight):
         bpy.data.scenes['Scene'].frame_end = self.frames
@@ -141,7 +149,6 @@ class RenderManager():
         arr = arr.reshape((resolution, resolution, 4))
         misc.imsave('normaloutputfile.png', arr)
         """
-
     def render_gt(self, filepath, camera, crackflag, save_list):
         # Set the camera used in this rendering pass
         self.setCamera(camera)
@@ -176,6 +183,39 @@ class RenderManager():
         # Read rendered image from temp file to np array
         res = imageio.imread(filepath)
         save_list.append(res)
+
+    def render_depth(self, filepath, camera, save_list):
+        # link scene composition node to depth
+        self.scene.compositionNodeTreeLinks.new(
+            self.scene.compositionNodeTree.nodes["Render Layers"].outputs["Depth"],
+            self.scene.compositionNodeTree.nodes["Composite"].inputs["Image"]
+        )
+        
+        # set render file format to .exr
+        bpy.data.scenes["Scene"].render.image_settings.file_format = "OPEN_EXR"
+        
+        # Render call
+        bpy.ops.render.render(write_still=True)
+
+        # load .exr and convert to numpy, save as numpy
+        # TODO: get python3.5m pip to load openexr...
+        render_depth_string = os.path.join('res/depth' + str(
+            self.result_depth_counter) + '.exr')
+        os.rename("tmp/tmp.exr", render_depth_string)
+        self.result_depth_counter += 1
+
+        # link scene composition node to color
+        self.scene.compositionNodeTreeLinks.new(
+            self.scene.compositionNodeTree.nodes["Render Layers"].outputs["Image"],
+            self.scene.compositionNodeTree.nodes["Composite"].inputs["Image"]
+        )
+
+        # set render file format to .png
+        bpy.data.scenes["Scene"].render.image_settings.file_format = "PNG"
+
+    def saveOpenEXR2NP(self, path):
+        # TODO
+        return
 
     def setPath(self, path):
         self.path = path

@@ -32,6 +32,17 @@ Note that depending on your OS and Blender version the shortcut "pip" could not 
 * ```pillow```
 * ```imageio```
 * ```fnmatch```
+* ```openexr```
+
+~~~
+sudo apt-get install libopenexr-dev
+sudo apt-get install openexr
+sudo apt-get install python3-dev
+
+pip install OpenEXR --user or pip3 install OpenEXR --user
+~~~
+Warning: OpenEXR did not properly install with python3.5m and is thus not usable within the blender python environment. See section "Converting EXR2NPY". 
+
 
 ## Running the code:
 #### The concrete textures can be found in the [AEROBIConcreteTextures](https://git.ccc.cs.uni-frankfurt.de/AEROBI/AEROBIConcreteTextures) repository. You need to download/clone the repository into the current repository (i.e. such that the concrete_textures folder is at the top level)
@@ -58,4 +69,5 @@ StereoCamera:
 The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 10 samples and with a resolution of 1024x1024. For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
 
 
-
+## Convertion EXR2NPY
+Find _exr2np.py_ in the _/utils_ directory. It contains example code for converting .exr files .npy.
