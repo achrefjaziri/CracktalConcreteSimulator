@@ -41,7 +41,7 @@ sudo apt-get install python3-dev
 
 pip install OpenEXR --user or pip3 install OpenEXR --user
 ~~~
-Warning: OpenEXR did not properly install with python3.5m and is thus not usable within the blender python environment. See section "Converting EXR2NPY". 
+__Warning:__ OpenEXR did not properly install with python3.5m and is thus not usable within the blender python environment. See section "Converting EXR2NPY". 
 
 
 ## Running the code:
@@ -70,4 +70,4 @@ The above command will render and save 10 images (rendered with respective groun
 
 
 ## Convertion EXR2NPY
-Find _exr2np.py_ in the _/utils_ directory. It contains example code for converting .exr files .npy.
+Find __exr2np.py__ in the __/utils__ directory. It contains example code for converting .exr files .npy.
