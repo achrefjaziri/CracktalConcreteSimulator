@@ -1,0 +1,6 @@
+opencv-python
+numpy==1.11.1  # scipy 1.2 needed (and installed) 1.17.2
+scipy==1.2
+pillow
+imageio
+OpenEXR

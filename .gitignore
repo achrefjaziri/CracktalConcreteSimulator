@@ -1,7 +1,8 @@
-concretedictionary/*
+concrete_textures/*
 lib/__pycache__/*
 tmp/*.png
 .idea/*
+res/*.png
 
-
+*.exr
 *.pyc
