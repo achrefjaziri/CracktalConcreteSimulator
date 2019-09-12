@@ -24,6 +24,7 @@ class RenderManager():
         self.result_imgs_right = []
         self.result_normals_right = []
         self.result_gt_right = []
+        self.result_depth_right = []
 
         self.scene = None
 
@@ -55,7 +56,11 @@ class RenderManager():
         self.render_gt(filepath=self.path, camera=camera, crackflag=self.cracked, save_list=self.result_gt)
 
         # render depth
-        self.render_depth(filepath=self.path, camera=camera, save_list=self.result_depth)
+        # TODO: NASTY HARDCODING HERE
+        depth_path = os.path.join('res/depth' + str(self.result_depth_counter) + '.exr')
+        self.render_depth(filepath=depth_path, camera=camera, save_list=self.result_depth)
+        # TODO: file naming shouldn't be implemented through a counter ...
+        self.result_depth_counter += 1
 
 
     def render_stereo(self, cameraLeft, cameraRight):
@@ -81,13 +86,23 @@ class RenderManager():
         # render groundtruth
         self.render_gt(filepath=self.path, camera=cameraLeft, crackflag=self.cracked, save_list=self.result_gt)
         # render groundtrugh right
-        #self.render_gt(filepath=self.path, camera=cameraRight, crackflag=self.cracked, save_list=self.result_gt_right)
+        self.render_gt(filepath=self.path, camera=cameraRight, crackflag=self.cracked, save_list=self.result_gt_right)
         
         # render normalmap
         self.render_np(filepath=self.path, camera=cameraLeft, save_list=self.result_normals)
-
         # render normalmap right
         self.render_np(filepath=self.path, camera=cameraRight, save_list=self.result_normals_right)
+
+        # render depth
+        # TODO: NASTY HARDCODING HERE
+        # TODO: that's because the save list isn't used and saving handled outside but inside the function -> refactor!
+        depth_path = os.path.join('res/depth' + str(self.result_depth_counter) + '.exr')
+        self.render_depth(depth_path, camera=cameraLeft, save_list=self.result_depth)
+        # render depth right
+        depth_path_right = os.path.join('res/depth' + str(self.result_depth_counter) + '_right.exr')
+        self.render_depth(filepath=depth_path_right, camera=cameraRight, save_list=self.result_depth_right)
+        # TODO: file naming shouldn't be implemented through a counter ...
+        self.result_depth_counter += 1
 
 
     def render_img(self, filepath, camera, save_list):
@@ -185,6 +200,9 @@ class RenderManager():
         save_list.append(res)
 
     def render_depth(self, filepath, camera, save_list):
+        # Set the camera used in this rendering pass
+        self.setCamera(camera)
+
         # link scene composition node to depth
         self.scene.compositionNodeTreeLinks.new(
             self.scene.compositionNodeTree.nodes["Render Layers"].outputs["Depth"],
@@ -198,11 +216,8 @@ class RenderManager():
         bpy.ops.render.render(write_still=True)
 
         # load .exr and convert to numpy, save as numpy
-        # TODO: get python3.5m pip to load openexr...
-        render_depth_string = os.path.join('res/depth' + str(
-            self.result_depth_counter) + '.exr')
-        os.rename("tmp/tmp.exr", render_depth_string)
-        self.result_depth_counter += 1
+        # TODO: get python3.5m pip to load openexr and then convert to numpy to add to list
+        os.rename("tmp/tmp.exr", filepath)
 
         # link scene composition node to color
         self.scene.compositionNodeTreeLinks.new(

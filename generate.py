@@ -69,9 +69,9 @@ def run(num_images, n_concrete, args=None):
         gt_string = os.path.join('res/gt' + str(i) + '.png')
         normal_string = os.path.join('res/normal' + str(i) + '.png')
 
-        res_string_right = os.path.join('res/render_right' + str(i) + '.png')
-        gt_string_right = os.path.join('res/gt_right' + str(i) + '.png')
-        normal_string_right = os.path.join('res/normal_right' + str(i) + '.png')
+        res_string_right = os.path.join('res/render' + str(i) + '_right.png')
+        gt_string_right = os.path.join('res/gt' + str(i) + '_right.png')
+        normal_string_right = os.path.join('res/normal' + str(i) + '_right.png')
 
         # save images to file
         misc.imsave(res_string, renderManager.result_imgs[-1])
@@ -86,6 +86,8 @@ def run(num_images, n_concrete, args=None):
             print("image save done...")
             misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
             print("normal map save done...")
+            misc.imsave(gt_string_right, renderManager.result_gt[-1])
+            print("ground truth save done...")
 
         print("")
 

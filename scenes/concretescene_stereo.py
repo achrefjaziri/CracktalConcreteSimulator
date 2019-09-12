@@ -33,13 +33,16 @@ class ConcreteSceneStereo(Scene):
         bpy.data.cameras['Camera'].name = 'CameraLeft'
         bpy.data.objects['Camera'].name = 'CameraLeft'
         # location of camera
-        bpy.data.objects['CameraLeft'].location = (-2.0, -14.0, 2.0)
+        Lcam_x = 0.0
+        Lcam_y = -1.37
+        Lcam_z = -0.40
+        bpy.data.objects['CameraLeft'].location = (Lcam_x, Lcam_y, Lcam_z)
         # rotation of camera. x axis rotation is 105.125 degrees in this example
-        bpy.data.objects['CameraLeft'].rotation_euler = [105.125*math.pi/180, 0.0, -8*math.pi/180]
+        bpy.data.objects['CameraLeft'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
         # scale of camera usually unaltered
         bpy.data.objects['CameraLeft'].scale = [1.0, 1.0, 1.0]
         # focal length of camera
-        bpy.data.cameras['CameraLeft'].lens = 35.00
+        bpy.data.cameras['CameraLeft'].lens = 8.00
         # focal length unit
         bpy.data.cameras['CameraLeft'].lens_unit = 'MILLIMETERS'
 
@@ -50,13 +53,14 @@ class ConcreteSceneStereo(Scene):
         bpy.data.cameras['Camera'].name = 'CameraRight'
         bpy.data.objects['Camera'].name = 'CameraRight'
         # location of camera
-        bpy.data.objects['CameraRight'].location = (2.0, -14, 2.0)
+        # axis offsets between L and R camera correspond to RESIST specifications
+        bpy.data.objects['CameraRight'].location = (Lcam_x + 0.11231, Lcam_y + 0.00116, Lcam_z + 0.00131)
         # rotation of camera. x axis rotation is 105.125 degrees in this example
-        bpy.data.objects['CameraRight'].rotation_euler = [105.125*math.pi/180, 0.0, 8*math.pi/180]
+        bpy.data.objects['CameraRight'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
         # scale of camera usually unaltered
         bpy.data.objects['CameraRight'].scale = [1.0, 1.0, 1.0]
         # focal length of camera
-        bpy.data.cameras['CameraRight'].lens = 35.00
+        bpy.data.cameras['CameraRight'].lens = 8.00
         # focal length unit
         bpy.data.cameras['CameraRight'].lens_unit = 'MILLIMETERS'
 
@@ -65,7 +69,7 @@ class ConcreteSceneStereo(Scene):
         # add light source
         bpy.ops.object.lamp_add(type='SUN')
         # change sun location
-        bpy.data.objects['Sun'].location = [0.0, -5.0, 5.0]
+        bpy.data.objects['Sun'].location = [0.0, -5.0, 3.0]
         # change rotation of sun's direction vector.
         bpy.data.objects['Sun'].rotation_euler = [59*math.pi/180, 0.0, 0.0]
 
@@ -83,14 +87,13 @@ class ConcreteSceneStereo(Scene):
 
     # Override(Scene)
     def _setup_objects(self):
-
         # add a base primitive mesh. in this case a grid mesh is added at the origin
         bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/2), y_subdivisions=int(self.resolution/2),
-                                        location=(0.0, -2.0, 5.5))
+                                        location=(0.0, 0.0, 0.0))
                                         
         # default object name is 'Grid'
         # set scale and rotation
-        bpy.data.objects['Grid'].scale = [6.275, 6.275, 6.275]
+        bpy.data.objects['Grid'].scale = [3.0, 3.0, 3.0]
         bpy.data.objects['Grid'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
         """
