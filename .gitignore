@@ -3,6 +3,5 @@ lib/__pycache__/*
 tmp/*.png
 .idea/*
 res/*.png
-
 *.exr
 *.pyc

@@ -86,7 +86,7 @@ def run(num_images, n_concrete, args=None):
             print("image save done...")
             misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
             print("normal map save done...")
-            misc.imsave(gt_string_right, renderManager.result_gt[-1])
+            misc.imsave(gt_string_right, renderManager.result_gt_right[-1])
             print("ground truth save done...")
 
         print("")
@@ -95,7 +95,10 @@ def run(num_images, n_concrete, args=None):
         del renderManager.result_imgs[:]
         del renderManager.result_normals[:]
         del renderManager.result_gt[:]
-
+        if(args.stereo_camera):
+            del renderManager.result_imgs_right[:]
+            del renderManager.result_normals_right[:]
+            del renderManager.result_gt_right[:]
 
 # parse command line arguments
 args = parse(sys.argv)
