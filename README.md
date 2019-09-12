@@ -5,7 +5,25 @@ An extra height map is used for displacement of mesh vertices.
 
 # Installation:
 
-Ubuntu users can find a pre-configured blender version as `.zip` file in this repository. The config steps followed are explained in the next subsection.
+Ubuntu users can find a pre-configured blender version as `.zip` file in this repository. The file uses git LFS, so the following steps are needed to actually clone it into the repository. This step can be skipped by downloading Blender 2.79 and following the config steps explained in the next subsection.
+
+```
+# 1. Install and configure Git LFS. This has to be done ONLY ONCE:
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+sudo apt install git-lfs
+git config --global filter.lfs.required true
+git config --global filter.lfs.clean "git-lfs clean -- %f"
+git config --global filter.lfs.smudge "git-lfs smudge --skip %f"
+git config --global filter.lfs.process "git-lfs filter-process --skip"
+git config --global lfs.batch "true"
+
+# 2. Once LFS is installed, in this repo:
+git lfs install
+git lfs fetch
+git lfs checkout
+
+# 3. The .zip file containing Blender can now be extracted and pit in any path/to/blender in your filesystem.
+```
 
 ## Installing external modules
 
