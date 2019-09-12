@@ -1,4 +1,4 @@
-# Blender python basic scene generation
+# Blender python basic scene generation:
 
 The generate.py script generates concrete PBR materials from a set of albedo, metallic, roughness and normal maps.
 An extra height map is used for displacement of mesh vertices. 
