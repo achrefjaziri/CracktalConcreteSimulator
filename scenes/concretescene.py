@@ -33,7 +33,7 @@ class ConcreteScene(Scene):
         bpy.data.cameras['Camera'].name = 'Camera'
         bpy.data.objects['Camera'].name = 'Camera'
         # location of camera
-        bpy.data.objects['Camera'].location = (0.0, -15.0, 2.0)
+        bpy.data.objects['Camera'].location = (0.0, -2.1, -0.57)
         # rotation of camera. x axis rotation is 105.125 degrees in this example
         bpy.data.objects['Camera'].rotation_euler = [105.125*math.pi/180, 0.0, 0.0]
         # scale of camera usually unaltered
@@ -69,11 +69,11 @@ class ConcreteScene(Scene):
 
         # add a base primitive mesh. in this case a grid mesh is added at the origin
         bpy.ops.mesh.primitive_grid_add(x_subdivisions=int(self.resolution/2), y_subdivisions=int(self.resolution/2),
-                                        location=(0.0, -2.0, 5.5))
+                                        location=(0.0, 0.0, 0.0))
                                         
         # default object name is 'Grid'
         # set scale and rotation
-        bpy.data.objects['Grid'].scale = [6.275, 6.275, 6.275]
+        bpy.data.objects['Grid'].scale = [1.0, 1.0, 1.0]
         bpy.data.objects['Grid'].rotation_euler = [105*math.pi/180, 0.0, 0.0]
 
         """
