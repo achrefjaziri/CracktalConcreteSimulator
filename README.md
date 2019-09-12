@@ -3,45 +3,44 @@
 The generate.py script generates concrete PBR materials from a set of albedo, metallic, roughness and normal maps.
 An extra height map is used for displacement of mesh vertices. 
 
+# Installation:
+
+Ubuntu users can find a pre-configured blender version as `.zip` file in this repository. The config steps followed are explained in the next subsection.
+
 ## Installing external modules
 
 To install external python packages like scipy do the following:
 
-1. Blender's python executable, e.g. python3.5m is located at 
+1. Blender's python (here referred to as `<BPY>`) executable, e.g. python3.5m is located at 
 ~~~
 /path/to/blender-version/python/bin/ 
 ~~~
 
-2. Pip is not part of python and thus not part of blender's python. So use the version in /getpip/getpip.py and install it
+2. Pip is not part of python and thus not part of blender's python. This can be easily fixed by
 ~~~
-/path/to/blender-version/python/bin/python3.5m /getpip/getpip.py
+<BPY> -m ensurepip
+<BPY> -m pip install --upgrade pip
 ~~~
-or download it from https://pip.pypa.io/en/stable/installing/ (state: 16/11/2017).
+
 Note that this is independent of your system's pip. 
 
-3. Install any packages with pip analogous to regular pip using blender's python version
+3. The `<BPY -m pip>` command is analogous to the `pip` executable on your regular python. You can then install the requirements in this repo as follows:
 ~~~
-/path/to/blender-version/python/bin/python3.5m /path/to/blender-version/python/bin/pip install package
+<BPY> -m pip install -r <REQUIREMENTS_FILE_PATH>
 ~~~
-Note that depending on your OS and Blender version the shortcut "pip" could not exist and will then be "pip3.5" or any other version suffix.
+
 
 ### Required external packages for this repository
-* ```opencv-python```
-* ```numpy==1.11```
-* ```scipy==1.2```
-* ```pillow```
-* ```imageio```
-* ```fnmatch```
-* ```openexr```
+
+see [requirements.txt](requirements.txt)
+
+These may not be necessary:
 
 ~~~
 sudo apt-get install libopenexr-dev
 sudo apt-get install openexr
 sudo apt-get install python3-dev
-
-pip install OpenEXR --user or pip3 install OpenEXR --user
 ~~~
-__Warning:__ OpenEXR did not properly install with python3.5m and is thus not usable within the blender python environment. See section "Converting EXR2NPY". 
 
 
 ## Running the code:
