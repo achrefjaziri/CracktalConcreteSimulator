@@ -48,7 +48,7 @@ class ConcreteScene(Scene):
         # add light source
         bpy.ops.object.lamp_add(type='SUN')
         # change sun location
-        bpy.data.objects['Sun'].location = [0.0, -5.0, 5.0]
+        bpy.data.objects['Sun'].location = [0.0, -5.0, 3.0]
         # change rotation of sun's direction vector.
         bpy.data.objects['Sun'].rotation_euler = [59*math.pi/180, 0.0, 0.0]
 
