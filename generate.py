@@ -2,9 +2,8 @@ import bpy
 import os
 import sys
 import random
-import numpy as np
-from scipy import misc
 from fnmatch import fnmatch
+import cv2
 
 dir = os.path.dirname(bpy.data.filepath)
 if not dir in sys.path:
@@ -74,19 +73,19 @@ def run(num_images, n_concrete, args=None):
         normal_string_right = os.path.join('res/normal' + str(i) + '_right.png')
 
         # save images to file
-        misc.imsave(res_string, renderManager.result_imgs[-1])
+        cv2.imwrite(res_string, renderManager.result_imgs[-1])
         print("image save done...")
-        misc.imsave(normal_string, renderManager.result_normals[-1])
+        cv2.imwrite(normal_string, renderManager.result_normals[-1])
         print("normal map save done...")
-        misc.imsave(gt_string, renderManager.result_gt[-1])
+        cv2.imwrite(gt_string, renderManager.result_gt[-1])
         print("ground truth save done...")
         # save images for stereo setup        
         if(args.stereo_camera):
-            misc.imsave(res_string_right, renderManager.result_imgs_right[-1])
+            cv2.imwrite(res_string_right, renderManager.result_imgs_right[-1])
             print("image save done...")
-            misc.imsave(normal_string_right, renderManager.result_normals_right[-1])
+            cv2.imwrite(normal_string_right, renderManager.result_normals_right[-1])
             print("normal map save done...")
-            misc.imsave(gt_string_right, renderManager.result_gt_right[-1])
+            cv2.imwrite(gt_string_right, renderManager.result_gt_right[-1])
             print("ground truth save done...")
 
         print("")
@@ -95,10 +94,12 @@ def run(num_images, n_concrete, args=None):
         del renderManager.result_imgs[:]
         del renderManager.result_normals[:]
         del renderManager.result_gt[:]
+        del renderManager.result_depth[:]
         if(args.stereo_camera):
             del renderManager.result_imgs_right[:]
             del renderManager.result_normals_right[:]
             del renderManager.result_gt_right[:]
+            del renderManager.result_depth_right[:]
 
 # parse command line arguments
 args = parse(sys.argv)

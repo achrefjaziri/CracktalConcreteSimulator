@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
-import imageio
 import os
+import cv2
 #import OpenEXR
 #import Imath
 
@@ -146,7 +146,7 @@ class RenderManager():
         # as it seems impossible to access rendered image directly due to some blender internal
         # buffer freeing issues, we save the result to a tmp image and load it again.
         # Read rendered image from temp file to np array
-        res = imageio.imread(filepath)
+        res = cv2.imread(filepath, 0)
         save_list.append(res)
 
         """
@@ -173,17 +173,18 @@ class RenderManager():
             self.scene.shaderDict["concrete"].set_shader_mode_gt();
 
             bpy.ops.render.render(write_still=True)
-            gt = imageio.imread(filepath)
+            gt = cv2.imread(filepath)
             # binarize the ground-truth map
             gt = gt > 0
-            gt = gt.astype(int)
-            imageio.imwrite(filepath, gt)
+            gt = gt.astype(np.uint8)
+            gt *= 255
+            cv2.imwrite(filepath, gt)
 
             save_list.append(gt)
         else:
             print ('crack map not generated.')
             gt = np.zeros((self.resolution, self.resolution, 3))
-            self.save_list.append(gt)
+            save_list.append(gt)
 
     def render_np(self, filepath, camera, save_list):
         # Set the camera used in this rendering pass
@@ -196,7 +197,7 @@ class RenderManager():
         bpy.ops.render.render(write_still=True)
 
         # Read rendered image from temp file to np array
-        res = imageio.imread(filepath)
+        res = cv2.imread(filepath)
         save_list.append(res)
 
     def render_depth(self, filepath, camera, save_list):
