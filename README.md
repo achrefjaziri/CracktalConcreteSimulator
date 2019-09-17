@@ -76,15 +76,17 @@ Run with:
 Example:
 MonoCamera:
 ~~~
-/path/to/blender --background --python generate.py -- --num-images 10 --samples 10 --crack --resolution 1024
+/path/to/blender --background --python generate.py -- --num-images 10 --samples 20 --crack --resolution 2048
 ~~~
 StereoCamera:
 ~~~
-/home/timm/Blender/blender_2.79b/blender --background --python generate.py -- --num-images 10 --samples 10 --crack --resolution 1024 --stereo_camera
+/home/timm/Blender/blender_2.79b/blender --background --python generate.py -- --num-images 10 --samples 20 --crack --resolution 2048 --stereo_camera
 ~~~
 
-The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 10 samples and with a resolution of 1024x1024. For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
+The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 20 samples and with a resolution of 2048x2048 (the max resolution at which the rendering process can currently execute). For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
 
+## Memory leak!
+#### We haven't identified the reason yet, but there currently exists a memory leak. Rendering around 500 images accumulates about 40-50 Gb RAM consumption. As the rendering of each image is independent the current workaround is to render a limited amount of images in each call to the program and then just start it again.   
 
 ## Convertion EXR2NPY
 Find __exr2np.py__ in the __/utils__ directory. It contains example code for converting .exr files .npy.
