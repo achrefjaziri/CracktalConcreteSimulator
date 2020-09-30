@@ -10,7 +10,7 @@ from lib.meshmodifiers import MeshDisplacement
 
 
 class ConcreteSceneStereo(Scene):
-    def __init__(self, resolution, is_cracked, path):
+    def __init__(self, resolution, is_cracked, path, pathNoise):
         # attributes of the scene used in setup need to be called before parent init!
         # otherwise they are not known to the overriding function!
         self.resolution = resolution
@@ -22,6 +22,8 @@ class ConcreteSceneStereo(Scene):
         self.DisplacedCrack = None
 
         self.pathname = path
+        self.pathnameNoise = pathNoise
+
         super(ConcreteSceneStereo, self).__init__()
 
     # Override(Scene)
@@ -127,13 +129,14 @@ class ConcreteSceneStereo(Scene):
         height_path = os.path.join(self.pathname[0] + '_Height' + self.pathname[1])
         ao_Path = os.path.join(self.pathname[0] + '_Ambient_Occlusion' + self.pathname[1])
         metallic_Path = os.path.join(self.pathname[0] + '_Metallic' + self.pathname[1])
-
+        noise_path =  os.path.join(self.pathnameNoise[0] + '_Noise' + self.pathnameNoise[1])
+        #TODO add noise path
         shadername = "concrete"
 
         if self.isCracked:
-            shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, height_path, self.resolution)
+            shader = CrackShader(shadername, albedo_path, roughness_path, normal_path, height_path,noise_path, self.resolution)
         else:
-            shader = MasterShader(shadername, albedo_path, roughness_path, normal_path, height_path)
+            shader = MasterShader(shadername, albedo_path, roughness_path, normal_path, height_path,noise_path)
 
         self.shaderDict[shadername] = shader
 

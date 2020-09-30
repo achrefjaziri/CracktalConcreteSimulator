@@ -1,15 +1,17 @@
 import bpy
-
+import time
 
 class MasterShader:
 
     def __init__(self, material_name, albedo_texture_path, roughness_texture_path,
-                 normal_texture_path, height_texture_path):
+                 normal_texture_path, height_texture_path,albedo_noise_texture_path):
+        print('im in baby !!')
         self.name = material_name
         self.albedoTexPath = albedo_texture_path
         self.roughnessTexPath = roughness_texture_path
         self.normalTexPath = normal_texture_path
         self.heightTexPath = height_texture_path
+        self.albedoNoisePath = albedo_noise_texture_path
 
         self._nodetree = None
         self._nodes = None
@@ -65,6 +67,23 @@ class MasterShader:
         self._nodes.new('ShaderNodeEmission')
         self._nodes['Emission'].name = 'emit1'
         self._nodes['emit1'].location = [450, -100]
+        print('setting shader node')
+
+        #Shader node for displaying Graffiti, moss etc..
+        self._nodes.new('ShaderNodeTexImage')
+        self._nodes['Image Texture'].name = 'albedonoise'  # albedo noise
+        self._nodes['albedonoise'].location = [-600, 900]
+        print('setting mix node')
+
+        # create mix rgb nodes to mix noise map and original image pbr maps
+        mix =self._nodes.new('ShaderNodeMixRGB')
+        mix.name = 'albedomix'
+        mix.location = [-200, 750]
+        mix.blend_type = 'MIX'
+
+
+        # add appropriate factors for scaling mixrgb nodes
+        #self._nodes['albedomix'].inputs[0].default_value = 0.5
 
     def set_shader_mode_gt(self):
         pass
@@ -77,18 +96,42 @@ class MasterShader:
             self._nodetree.links.remove(l)
 
     def set_shader_mode_color(self):
+
+        print('color mode!!')
         self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
-        self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['pbr'].inputs[0])
+
+        self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+        print('first link')
+        self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'],
+                                 self._nodes['albedomix'].inputs[1])
+        print('second link')
+        self._nodetree.links.new(self._nodes['albedonoise'].outputs['Color'],
+                                 self._nodes['albedomix'].inputs[2])
+        self._nodetree.links.new(self._nodes['albedonoise'].outputs['Alpha'],
+                                 self._nodes['albedomix'].inputs[0])
+        print('third link')
+        self._nodetree.links.new(self._nodes['albedomix'].outputs['Color'], self._nodes['pbr'].inputs[0])
+        print('back to roughness and stuff')
         self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'],
                                  self._nodes['pbr'].inputs['Roughness'])
         self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'],
                                  self._nodes['normalmapconcrete'].inputs[1])
         self._nodetree.links.new(self._nodes['normalmapconcrete'].outputs[0], self._nodes['pbr'].inputs['Normal'])
-
+        print("This prints once a minute.")
+        time.sleep(600)
     def _load_images_to_textures_nodes(self):
+        print("load texture to nodes")
         # albedo map
         bpy.data.images.load(filepath=self.albedoTexPath)
         self._nodes['albedoconcrete'].image = bpy.data.images[self.albedoTexPath.split("/")[-1]]
+        print('loading noise texture')
+        #albedo noise
+        bpy.data.images.load(filepath=self.albedoNoisePath)
+        self._nodes['albedonoise'].image = bpy.data.images[self.albedoNoisePath.split("/")[-1]]
+        print("load albdo texture",self.albedoNoisePath.split("/")[-1])
+        print("albedo images1",self._nodes['albedonoise'].image )
+        print("albedo images1",self._nodes['albedoconcrete'].image )
+        time.sleep(600)
 
         # roughness map
         bpy.data.images.load(filepath=self.roughnessTexPath)
@@ -128,11 +171,12 @@ class MasterShader:
         blender_obj.modifiers['Displace'].strength = disp_strength
     """
 
-    def load_texture(self, albedo_path, roughness_path, normal_path, height_path):
+    def load_texture(self, albedo_path, roughness_path, normal_path, height_path, albedo_noise_path):
         self.albedoTexPath = albedo_path
         self.roughnessTexPath = roughness_path
         self.normalTexPath = normal_path
         self.heightTexPath = height_path
+        self.albedoNoisePath = albedo_noise_path
 
     def sample_texture(self):
         # TODO: returning height texture path so that it can be used for displacement of mesh. This is an imroper fix.

@@ -19,13 +19,13 @@ def parse(argv):
 
     parser.add_argument("-b", "--batch-size", default=4, type=int,
                         metavar="N", help="mini-batch size (default: 8)")
-    parser.add_argument("-res", "--resolution", default=2048, type=int,
-                        metavar="R", help="image render resolution (default: 2048)")
+    parser.add_argument("-res", "--resolution", default=4096, type=int,
+                        metavar="R", help="image render resolution (default: 4096)")
     parser.add_argument("-tile", "--tile-size", default=256, type=int,
                         metavar="T", help="rendering tile size (default 256)")
     parser.add_argument("-imgs", "--num-images", default=100, type=int,
                         metavar="I", help="number of images to render (default 100)")
-    parser.add_argument("-s", "--samples", default=20, type=int,
+    parser.add_argument("-s", "--samples", default=6, type=int,
                         metavar="S", help="number of samples to render (default 6)")
     parser.add_argument("--crack", action='store_true', default=False,
                       	help="whether shall be cracks rendered into the images")

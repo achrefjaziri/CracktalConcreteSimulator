@@ -1,16 +1,16 @@
 import bpy
 
 import numpy as np
-
+import time
 from lib.mastershader import MasterShader
 from lib.fractalcracks import generate_fractal_cracks
 
 
 class CrackShader(MasterShader):
     def __init__(self, material_name, albedo_tex_path, roughness_tex_path, normal_tex_path,
-                 height_tex_path, resolution):
+                 height_tex_path,albedo_noise_texture_path, resolution):
         super(CrackShader, self).__init__(material_name, albedo_tex_path, roughness_tex_path,
-                                          normal_tex_path, height_tex_path)
+                                          normal_tex_path, height_tex_path,albedo_noise_texture_path)
 
         self.resolution = resolution
 
@@ -64,7 +64,7 @@ class CrackShader(MasterShader):
         # self._nodetree.links.new(self._nodes['normalcrack'].outputs['Color'], self._nodes['normalmix'].inputs[2])
 
         # link albedo, roughness and normal mixrgb maps to color, roughness displacement.
-        self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['pbr'].inputs[0])
+        self._nodetree.links.new(self._nodes['albedomix'].outputs['Color'], self._nodes['pbr'].inputs[0])
         self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['pbr'].inputs['Roughness'])
         # self._nodetree.links.new(self._nodes['normalmix'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
 
@@ -141,12 +141,38 @@ class CrackShader(MasterShader):
         # link albedo, roughness and normal mixrgb maps to color, roughness displacement
         self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'], self._nodes['pbr'].inputs[0])
         self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['pbr'].inputs['Roughness'])
+        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'],
+                                 self._nodes['normalmapconcrete'].inputs[1])
+        self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
+
+    def set_shader_mode_color_noise(self):
+
+        # link crack and original map nodes to mixrgb
+        self._nodetree.links.new(self._nodes['roughnessconcrete'].outputs['Color'],
+                                 self._nodes['roughnessmix'].inputs[1])
+        self._nodetree.links.new(self._nodes['roughnesscrack'].outputs['Color'], self._nodes['roughnessmix'].inputs[2])
+
+        self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmix'].inputs[1])
+        self._nodetree.links.new(self._nodes['normalcrack'].outputs['Color'], self._nodes['normalmix'].inputs[2])
+        self._nodetree.links.new(self._nodes['albedonoise'].outputs['Alpha'],
+                                 self._nodes['albedomix'].inputs[0])
+        self._nodetree.links.new(self._nodes['albedoconcrete'].outputs['Color'],
+                                 self._nodes['albedomix'].inputs[1])
+        print('second link')
+        self._nodetree.links.new(self._nodes['albedonoise'].outputs['Color'],
+                                 self._nodes['albedomix'].inputs[2])
+        print('third link')
+        # link albedo, roughness and normal mixrgb maps to color, roughness displacement
+        self._nodetree.links.new(self._nodes['albedomix'].outputs['Color'], self._nodes['pbr'].inputs[0])
+
+
+        self._nodetree.links.new(self._nodes['roughnessmix'].outputs['Color'], self._nodes['pbr'].inputs['Roughness'])
         self._nodetree.links.new(self._nodes['normalconcrete'].outputs['Color'], self._nodes['normalmapconcrete'].inputs[1])
         self._nodetree.links.new(self._nodes['pbr'].outputs[0], self._nodes['Material Output'].inputs['Surface'])
 
     def _load_images_to_textures_nodes(self):
         img_tex_albedo, img_tex_roughness, img_tex_normals, img_tex_heights = self._generate_fractal_crack_maps()
-
+        print("Loading textures")
         # feed new texture into appropriate nodes
         self._nodes['albedocrack'].image = img_tex_albedo
         self._nodes['roughnesscrack'].image = img_tex_roughness
@@ -155,6 +181,10 @@ class CrackShader(MasterShader):
         # albedo map
         bpy.data.images.load(filepath=self.albedoTexPath)
         self._nodes['albedoconcrete'].image = bpy.data.images[self.albedoTexPath.split("/")[-1]]
+
+        # albedo noise
+        bpy.data.images.load(filepath=self.albedoNoisePath)
+        self._nodes['albedonoise'].image = bpy.data.images[self.albedoNoisePath.split("/")[-1]]
 
         # roughness map
         bpy.data.images.load(filepath=self.roughnessTexPath)
