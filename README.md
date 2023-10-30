@@ -1,5 +1,7 @@
 # Cracktal Simulator code
-This repository provides the code for generating images of concrete surface with cracks. The code is based on Blender API. Already rendered data can be downloaded from here:
+This repository provides the code for Cracktal Simulator for generating images of concrete surface with cracks in our paper: https://arxiv.org/abs/2309.09637v1
+
+The code is based on Blender API. Already rendered data can be downloaded from here:
 # Blender python basic scene generation:
 
 The generate.py script generates concrete PBR materials from a set of albedo, metallic, roughness and normal maps.
