@@ -2,7 +2,6 @@ import bpy
 import time
 
 class MasterShader:
-
     def __init__(self, material_name, albedo_texture_path, roughness_texture_path,
                  normal_texture_path, height_texture_path,albedo_noise_texture_path):
         self.name = material_name

@@ -3,7 +3,6 @@ import numpy as np
 import Imath
 
 import sys
-
 def exr2numpy(filepath):
 	# Get FLOAT type
 	pt = Imath.PixelType(Imath.PixelType.FLOAT)

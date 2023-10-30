@@ -2,7 +2,6 @@ import bpy
 
 
 class MeshDisplacement:
-
     def __init__(self, blender_object, texture_name):
         self.mesh = blender_object
 

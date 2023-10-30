@@ -3,7 +3,6 @@
 import argparse
 
 def parse(argv):
-
     if "--" not in argv:
         argv = []  # as if no args are passed
     else:

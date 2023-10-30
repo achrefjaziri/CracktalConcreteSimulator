@@ -8,7 +8,6 @@ from lib.crackshader import CrackShader
 from lib.mastershader import MasterShader
 from lib.meshmodifiers import MeshDisplacement
 
-
 class ConcreteScene(Scene):
     def __init__(self, resolution, is_cracked, path):
         # attributes of the scene used in setup need to be called before parent init!
