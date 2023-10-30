@@ -19,7 +19,6 @@ from lib.rendermanager import RenderManager
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
 # this behavior you can modify the GPUs index to "use=False": 
 # bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
-
 # UseGPU = False
 # if len(list(bpy.context.user_preferences.addons['cycles'].preferences.devices)) > 0:
 #     bpy.context.scene.cycles.device = 'GPU'
