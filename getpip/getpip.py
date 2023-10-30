@@ -5,7 +5,6 @@
 # even be worried that we're up to something nefarious (good for you for being
 # paranoid!). This is a base85 encoding of a zip file, this zip file contains
 # an entire copy of pip.
-#
 # Pip is a thing that installs packages, pip itself is a package that someone
 # might want to install, especially if they're looking to run this get-pip.py
 # script. Pip has a lot of code to deal with the security of installing
