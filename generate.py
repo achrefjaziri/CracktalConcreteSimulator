@@ -14,9 +14,10 @@ from scenes.concretescene import ConcreteScene
 from scenes.concretescene_stereo import ConcreteSceneStereo
 from lib.rendermanager import RenderManager
 
-# Find out if system has GPU and if it has at least one GPU, it is going to be set
+#TODO the GPU mode is experimental. We recommend using the CPUs.  
+#Find out if system has GPU and if it has at least one GPU, it is going to be set
 # Note: Blender seems to automatically use all GPUs in a system. If you want to avoid
-# this behavior you can modify the GPUs index to "use=False": 
+# this behavior you can modify the GPUs index to "use=False". 
 # bpy.context.user_preferences.addons['cycles'].preferences.devices[gpu_idx].use = False
 
 UseGPU = False
