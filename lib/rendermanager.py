@@ -4,7 +4,6 @@ import os
 import cv2
 #import OpenEXR
 #import Imath
-
 class RenderManager():
     def __init__(self, path, frames, samples, resolution, tilesize, cracked):
         self.path = path

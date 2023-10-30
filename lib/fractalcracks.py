@@ -2,7 +2,6 @@ import numpy
 import math
 import cv2
 
-
 def kochenize(first_p, second_p, i):
     mu = 0.0
     sigma = numpy.pi/6.0 # 45°

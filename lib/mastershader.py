@@ -1,6 +1,5 @@
 import bpy
 
-
 class MasterShader:
 
     def __init__(self, material_name, albedo_texture_path, roughness_texture_path,

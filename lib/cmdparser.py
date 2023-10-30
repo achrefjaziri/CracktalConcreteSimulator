@@ -1,7 +1,6 @@
 # Adapted from
 # https://developer.blender.org/diffusion/B/browse/master/release/scripts/templates_py/background_job.py
 import argparse
-
 def parse(argv):
 
     if "--" not in argv:

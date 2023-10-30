@@ -5,7 +5,6 @@ import numpy as np
 from lib.mastershader import MasterShader
 from lib.fractalcracks import generate_fractal_cracks
 
-
 class CrackShader(MasterShader):
     def __init__(self, material_name, albedo_tex_path, roughness_tex_path, normal_tex_path,
                  height_tex_path, resolution):
