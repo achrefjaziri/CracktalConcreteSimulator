@@ -66,7 +66,7 @@ sudo apt-get install python3-dev
 
 The code was scripted in blender version 2.79 on a Linux OS. As this version introduced a large change to how PBR rendering works in Blender, previous versions are no longer supported! 
 
-Ensure your are inside the repository folder in the command line. 
+Ensure you are inside the repository folder in the command line. 
 
 Run with:
 ~~~
@@ -84,6 +84,14 @@ StereoCamera:
 ~~~
 
 The above command will render and save 10 images (rendered with respective groundtruths and normalmaps) with crack into a /tmp folder, rendered at 20 samples and with a resolution of 2048x2048 (the max resolution at which the rendering process can currently execute). For more options please check cmdparser.py in lib/ folder or use --help in the arguments.
+
+## Image Rendering with Moss and Graffiti
+
+To create images featuring graffiti or moss textures, follow these steps:
+
+- Switch to the "graffiti" branch within the repository. 
+- Ensure that a directory named '/noise_textures' is present, containing albedo maps for both moss and graffiti textures. These maps were sourced from [textures.com](https://www.textures.com/search?q=moss) and [turbosquid.com](https://www.turbosquid.com/FullPreview/490921) as the reference sources. Each texture in use adheres to the "\*_Noise*" naming convention.
+- Employ the same script utilized for image generation in the standard scenario.
 
 ## Memory leak!
 #### We haven't identified the reason yet, but there currently exists a memory leak. Rendering around 500 images accumulates about 40-50 Gb RAM consumption. As the rendering of each image is independent the current workaround is to render a limited amount of images in each call to the program and then just start it again.   
