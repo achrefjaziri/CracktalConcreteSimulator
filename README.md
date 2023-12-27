@@ -1,7 +1,7 @@
 # Cracktal Simulator code
 This repository provides the code for Cracktal Simulator for generating images of concrete surface with cracks. Cracktal was designed to study the Sim2Real gap in the context of crack detection in our paper: Designing a Hybrid Neural System to Learn Real-world Crack Segmentation from Fractal-based Simulation (https://arxiv.org/abs/2309.09637v1)
 
-The code is based on Blender API. Already rendered data can be downloaded from here:
+The code is based on Blender API. To get access to already rendered data (around 120GB) or the textures used with the generator, please contact the first author at: Jaziri@em.uni-frankfurt.de
 # Blender python basic scene generation:
 
 The generate.py script generates concrete PBR materials from a set of albedo, metallic, roughness and normal maps.
