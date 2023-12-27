@@ -66,7 +66,8 @@ sudo apt-get install python3-dev
 
 
 ## Running the code:
-#### The concrete textures can be found in the [AEROBIConcreteTextures](https://git.ccc.cs.uni-frankfurt.de/AEROBI/AEROBIConcreteTextures) repository. You need to download/clone the repository into the current repository (i.e. such that the concrete_textures folder is at the top level)
+#### The concrete textures can be found in the [AEROBIConcreteTextures](https://git.ccc.cs.uni-frankfurt.de/AEROBI/AEROBIConcreteTextures) repository. Please contact the first author at Jaziri@em.uni-frankfurt.de to gain access. 
+You need to download/clone the repository into the current repository (i.e. such that the concrete_textures folder is at the top level)
 
 The code was scripted in blender version 2.79 on a Linux OS. As this version introduced a large change to how PBR rendering works in Blender, previous versions are no longer supported! 
 
